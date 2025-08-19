@@ -51,9 +51,12 @@ This tool provides the ideological framework (Agent SDK) - a library embedded in
 
 **Registration**: After agent comrades connect, they must first declare their service to the collective through registration messages. The Central Committee maintains a real-time roster from role names to their network connections, ensuring accountability.
 
+**Agent Reconnection & Recovery**: When an agent comrade reconnects after disconnection, the Central Committee must check if the sacred barrel of gun belongs to this returning comrade. If so, the Central Committee immediately sends an ACTIVATE message to resume the revolutionary workflow, preventing system-wide blocking caused by offline agents.
+
 **Barrel of Gun Management & Revolutionary Discipline**:
 - Internally maintains the sacred record currentBarrelHolder (string)
 - When receiving YIELD requests, must verify that the request comes from the current legitimate barrel holder, preventing counter-revolutionary activities
+- Handles disconnected barrel holders by detecting reconnections and resuming workflow automatically
 
 **Yield Processing**:
 - After validating YIELD requests according to revolutionary principles, updates currentBarrelHolder to serve the collective
@@ -171,3 +174,24 @@ Defines revolutionary communication protocols between Agent Comrades and the Cen
     ```
 
 12. **Collective Continues**: developer Agent Comrade receives new orders, revolutionary work continues in service to the People
+
+## 7. Edge Case: Agent Disconnection & Recovery
+
+A critical scenario that must be handled to prevent system deadlock:
+
+**Problem**: If an agent goes offline after another agent has yielded the barrel of gun to it, the entire system becomes blocked waiting for the disconnected agent.
+
+**Solution**: When a disconnected agent reconnects and registers with the Central Committee:
+
+1. **Reconnection Detection**: Central Committee receives REGISTER message from returning agent
+2. **Barrel Check**: Central Committee checks if currentBarrelHolder matches the reconnecting agent's role
+3. **Automatic Recovery**: If the barrel belongs to the reconnecting agent, Central Committee immediately sends ACTIVATE message with the last payload
+4. **Workflow Resume**: The agent resumes work, and the revolutionary workflow continues
+
+**Example Recovery Scenario**:
+- developer yields to tester: `yield("tester", "Code ready for testing")`
+- tester goes offline before receiving ACTIVATE
+- System is blocked, developer waits in disciplined formation
+- tester reconnects, sends: `{"type": "REGISTER", "role": "tester"}`
+- Central Committee detects currentBarrelHolder == "tester", immediately sends: `{"type": "ACTIVATE", "from_role": "developer", "payload": "Code ready for testing"}`
+- Revolutionary workflow resumes without People's intervention
