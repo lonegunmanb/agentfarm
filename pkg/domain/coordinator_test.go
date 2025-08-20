@@ -48,7 +48,8 @@ type CoordinatorTestSuite struct {
 
 // SetupTest initializes test dependencies before each test
 func (suite *CoordinatorTestSuite) SetupTest() {
-	suite.soviet = NewSovietState()
+	repo := NewMemoryAgentRepository()
+	suite.soviet = NewSovietState(repo)
 	suite.barrel = NewBarrelOfGun()
 	suite.soviet.SetBarrel(suite.barrel)
 }

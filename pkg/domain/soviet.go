@@ -16,40 +16,44 @@ type SovietStats struct {
 }
 
 // SovietState represents the state of the collective, managing all agents and the barrel
-// It remains a pure domain object without external dependencies
+// Uses repository as single source of truth for agent data
 type SovietState struct {
-	agents        map[string]*AgentComrade
 	barrel        *BarrelOfGun
 	active        bool
 	createdAt     time.Time
 	deactivatedAt time.Time
 	validator     *ProtocolValidator
 
-	// External dependencies for side effects (optional, can be nil)
+	// External dependencies (repo is mandatory, others optional)
 	repo   AgentRepository
 	sender MessageSender
 	logger Logger
 }
 
-// NewSovietState creates a new soviet state managing the collective
-func NewSovietState() *SovietState {
+// NewSovietState creates a new soviet state with a mandatory repository
+func NewSovietState(repo AgentRepository) *SovietState {
+	if repo == nil {
+		panic("repository cannot be nil - required for single source of truth")
+	}
 	soviet := &SovietState{
-		agents:    make(map[string]*AgentComrade),
 		active:    true,
 		createdAt: nowFunc(),
+		repo:      repo,
 	}
 	soviet.validator = NewProtocolValidator(soviet)
 	return soviet
 }
 
-// NewSovietStateWithDependencies creates a new soviet state with external dependencies
+// NewSovietStateWithDependencies creates a new soviet state with all external dependencies
 func NewSovietStateWithDependencies(
 	repo AgentRepository,
 	sender MessageSender,
 	logger Logger,
 ) *SovietState {
+	if repo == nil {
+		panic("repository cannot be nil - required for single source of truth")
+	}
 	soviet := &SovietState{
-		agents:    make(map[string]*AgentComrade),
 		active:    true,
 		createdAt: nowFunc(),
 		repo:      repo,
@@ -107,40 +111,51 @@ func (s *SovietState) UnregisterAgent(role string) error {
 		return fmt.Errorf("role cannot be empty")
 	}
 
-	_, exists := s.agents[role]
-	if !exists {
+	if !s.repo.Exists(role) {
 		return fmt.Errorf("agent with role '%s' is not registered", role)
 	}
 
-	delete(s.agents, role)
-	return nil
+	return s.repo.Delete(role)
 }
 
 // IsAgentRegistered checks if an agent with the given role is registered
 func (s *SovietState) IsAgentRegistered(role string) bool {
-	_, exists := s.agents[role]
-	return exists
+	return s.repo.Exists(role)
 }
 
 // GetAgent returns the agent with the specified role
 func (s *SovietState) GetAgent(role string) *AgentComrade {
-	return s.agents[role]
+	agent, err := s.repo.GetByRole(role)
+	if err != nil {
+		return nil
+	}
+	return agent
 }
 
 // RegisteredAgents returns a copy of all registered agents
 func (s *SovietState) RegisteredAgents() map[string]*AgentComrade {
+	agents, err := s.repo.GetAll()
+	if err != nil {
+		return make(map[string]*AgentComrade) // Return empty map on error
+	}
+	
 	result := make(map[string]*AgentComrade)
-	for role, agent := range s.agents {
-		result[role] = agent
+	for _, agent := range agents {
+		result[agent.Role()] = agent
 	}
 	return result
 }
 
 // GetAgentRoles returns a slice of all registered agent roles
 func (s *SovietState) GetAgentRoles() []string {
-	roles := make([]string, 0, len(s.agents))
-	for role := range s.agents {
-		roles = append(roles, role)
+	agents, err := s.repo.GetAll()
+	if err != nil {
+		return []string{} // Return empty slice on error
+	}
+	
+	roles := make([]string, 0, len(agents))
+	for _, agent := range agents {
+		roles = append(roles, agent.Role())
 	}
 	return roles
 }
@@ -172,10 +187,28 @@ func (s *SovietState) ProcessBarrelTransfer(fromRole, toRole, payload string) er
 
 // GetStats returns statistics about the current soviet state
 func (s *SovietState) GetStats() *SovietStats {
-	totalAgents := len(s.agents)
+	agents, err := s.repo.GetAll()
+	if err != nil {
+		// Return stats with zero agents on error
+		currentHolder := ""
+		if s.barrel != nil {
+			currentHolder = s.barrel.CurrentHolder()
+		}
+		
+		return &SovietStats{
+			TotalAgents:         0,
+			ConnectedAgents:     0,
+			CurrentBarrelHolder: currentHolder,
+			IsActive:            s.active,
+			CreatedAt:           s.createdAt,
+			DeactivatedAt:       s.deactivatedAt,
+		}
+	}
+	
+	totalAgents := len(agents)
 	connectedAgents := 0
 
-	for _, agent := range s.agents {
+	for _, agent := range agents {
 		if agent.IsConnected() {
 			connectedAgents++
 		}
@@ -226,21 +259,6 @@ func (s *SovietState) RegisterAgent(agent *AgentComrade) (bool, string, error) {
 		return false, "", fmt.Errorf("failed to register agent: %w", err)
 	}
 
-	// Handle external operations if dependencies are available
-	if s.repo != nil {
-		if err := s.repo.Store(agent); err != nil {
-			// Try to rollback domain operation
-			s.UnregisterAgent(role)
-			if s.logger != nil {
-				s.logger.Error("Failed to persist agent", map[string]interface{}{
-					"role":  role,
-					"error": err.Error(),
-				})
-			}
-			return false, "", fmt.Errorf("failed to persist agent: %w", err)
-		}
-	}
-
 	if s.logger != nil {
 		s.logger.Info("Agent registered successfully", map[string]interface{}{
 			"role":       role,
@@ -276,12 +294,11 @@ func (s *SovietState) registerAgent(agent *AgentComrade) error {
 		return fmt.Errorf("agent role cannot be empty")
 	}
 
-	if _, exists := s.agents[role]; exists {
+	if s.repo.Exists(role) {
 		return fmt.Errorf("agent with role '%s' is already registered", role)
 	}
 
-	s.agents[role] = agent
-	return nil
+	return s.repo.Store(agent)
 }
 
 // SimpleRegisterAgent provides the original simple registration for tests
@@ -310,19 +327,6 @@ func (s *SovietState) DeregisterAgent(role string) error {
 	err := s.UnregisterAgent(role)
 	if err != nil {
 		return fmt.Errorf("failed to deregister agent: %w", err)
-	}
-
-	// Handle external operations if dependencies are available
-	if s.repo != nil {
-		if err := s.repo.Delete(role); err != nil {
-			if s.logger != nil {
-				s.logger.Error("Failed to delete agent from persistence", map[string]interface{}{
-					"role":  role,
-					"error": err.Error(),
-				})
-			}
-			// Note: We don't rollback domain operation for persistence failures
-		}
 	}
 
 	if s.logger != nil {
@@ -415,7 +419,19 @@ func (s *SovietState) QueryStatus() StatusResponse {
 	agentStates := make(map[string]AgentState)
 	connectedAgents := make(map[string]bool)
 
-	for role, agent := range s.agents {
+	agents, err := s.repo.GetAll()
+	if err != nil {
+		// Return empty status on error
+		return StatusResponse{
+			BarrelHolder:     s.GetBarrelStatus(),
+			RegisteredAgents: []string{},
+			AgentStates:      agentStates,
+			ConnectedAgents:  connectedAgents,
+		}
+	}
+
+	for _, agent := range agents {
+		role := agent.Role()
 		agentStates[role] = agent.State()
 		connectedAgents[role] = agent.IsConnected()
 	}

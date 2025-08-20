@@ -18,7 +18,8 @@ type ProtocolValidatorTestSuite struct {
 
 func (suite *ProtocolValidatorTestSuite) SetupTest() {
 	// Create test soviet state
-	suite.soviet = NewSovietState()
+	repo := NewMemoryAgentRepository()
+	suite.soviet = NewSovietState(repo)
 
 	// Create validator
 	suite.validator = NewProtocolValidator(suite.soviet)

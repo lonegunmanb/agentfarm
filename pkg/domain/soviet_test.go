@@ -6,9 +6,14 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+// Helper function to create soviet with repository for tests
+func newTestSoviet() *SovietState {
+	return NewSovietState(NewMemoryAgentRepository())
+}
+
 func TestSovietState_NewSovietState(t *testing.T) {
 	// RED: Test creation of new soviet state
-	soviet := NewSovietState()
+	soviet := newTestSoviet()
 
 	assert.NotNil(t, soviet)
 	assert.NotZero(t, soviet.CreatedAt())
@@ -19,7 +24,7 @@ func TestSovietState_NewSovietState(t *testing.T) {
 
 func TestSovietState_SetBarrel(t *testing.T) {
 	// RED: Test barrel management
-	soviet := NewSovietState()
+	soviet := newTestSoviet()
 	barrel := NewBarrelOfGun()
 
 	// Initially no barrel
@@ -39,7 +44,7 @@ func TestSovietState_SetBarrel(t *testing.T) {
 
 func TestSovietState_RegisterAgent(t *testing.T) {
 	// RED: Test agent registration
-	soviet := NewSovietState()
+	soviet := newTestSoviet()
 	agent := NewAgentComrade("developer", "primary", []string{"code"})
 
 	// Initially no agents
@@ -71,7 +76,7 @@ func TestSovietState_RegisterAgent(t *testing.T) {
 
 func TestSovietState_UnregisterAgent(t *testing.T) {
 	// RED: Test agent unregistration
-	soviet := NewSovietState()
+	soviet := newTestSoviet()
 	agent := NewAgentComrade("developer", "primary", []string{"code"})
 
 	// Register first
@@ -98,7 +103,7 @@ func TestSovietState_UnregisterAgent(t *testing.T) {
 
 func TestSovietState_GetAgentRoles(t *testing.T) {
 	// RED: Test getting all agent roles
-	soviet := NewSovietState()
+	soviet := newTestSoviet()
 
 	// Initially empty
 	roles := soviet.GetAgentRoles()
@@ -119,7 +124,7 @@ func TestSovietState_GetAgentRoles(t *testing.T) {
 
 func TestSovietState_CurrentBarrelHolder(t *testing.T) {
 	// RED: Test current barrel holder tracking
-	soviet := NewSovietState()
+	soviet := newTestSoviet()
 	barrel := NewBarrelOfGun()
 
 	// Set barrel
@@ -142,7 +147,7 @@ func TestSovietState_CurrentBarrelHolder(t *testing.T) {
 
 func TestSovietState_IsBarrelHeldBy(t *testing.T) {
 	// RED: Test barrel ownership checking
-	soviet := NewSovietState()
+	soviet := newTestSoviet()
 	barrel := NewBarrelOfGun()
 	soviet.SetBarrel(barrel)
 
@@ -161,7 +166,7 @@ func TestSovietState_IsBarrelHeldBy(t *testing.T) {
 
 func TestSovietState_Activate(t *testing.T) {
 	// RED: Test soviet activation/deactivation
-	soviet := NewSovietState()
+	soviet := newTestSoviet()
 
 	// Initially active
 	assert.True(t, soviet.IsActive())
@@ -179,7 +184,7 @@ func TestSovietState_Activate(t *testing.T) {
 
 func TestSovietState_GetStats(t *testing.T) {
 	// RED: Test getting soviet statistics
-	soviet := NewSovietState()
+	soviet := newTestSoviet()
 	barrel := NewBarrelOfGun()
 	soviet.SetBarrel(barrel)
 
