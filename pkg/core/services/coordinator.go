@@ -9,7 +9,8 @@ import (
 // SovietCoordinator implements the core business logic for managing agents and barrel transfers
 // It serves as the central coordination service for the Agent Farm collective
 type SovietCoordinator struct {
-	soviet *domain.SovietState
+	soviet    *domain.SovietState
+	validator *ProtocolValidator
 }
 
 // NewSovietCoordinator creates a new coordinator with the given soviet state
@@ -18,7 +19,8 @@ func NewSovietCoordinator(soviet *domain.SovietState) *SovietCoordinator {
 		panic("soviet state cannot be nil")
 	}
 	return &SovietCoordinator{
-		soviet: soviet,
+		soviet:    soviet,
+		validator: NewProtocolValidator(soviet),
 	}
 }
 
@@ -83,27 +85,14 @@ func (c *SovietCoordinator) DeregisterAgent(role string) error {
 
 // ProcessYield handles yield requests and manages barrel transfers
 func (c *SovietCoordinator) ProcessYield(message domain.YieldMessage) error {
+	// Use the protocol validator for comprehensive validation
+	if err := c.validator.ValidateYieldWorkflow(message); err != nil {
+		return err
+	}
+
 	fromRole := message.FromRole()
 	toRole := message.ToRole()
 	payload := message.Payload()
-
-	// Validate that the sender currently holds the barrel
-	barrel := c.soviet.GetBarrel()
-	if barrel == nil {
-		return fmt.Errorf("no barrel available in soviet")
-	}
-
-	if !barrel.IsHeldBy(fromRole) {
-		return fmt.Errorf("only current barrel holder can yield (current holder: %s, requester: %s)",
-			barrel.CurrentHolder(), fromRole)
-	}
-
-	// Validate target (unless yielding to "people")
-	if toRole != "people" {
-		if !c.soviet.IsAgentRegistered(toRole) {
-			return fmt.Errorf("target agent '%s' not found", toRole)
-		}
-	}
 
 	// Get the source agent and transition it to waiting
 	sourceAgent := c.soviet.GetAgent(fromRole)
@@ -112,6 +101,7 @@ func (c *SovietCoordinator) ProcessYield(message domain.YieldMessage) error {
 	}
 
 	// Transfer the barrel
+	barrel := c.soviet.GetBarrel()
 	err := barrel.TransferTo(toRole, payload)
 	if err != nil {
 		return fmt.Errorf("failed to transfer barrel: %w", err)
