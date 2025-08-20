@@ -160,6 +160,12 @@ func (s *SovietState) GetAgentRoles() []string {
 	return roles
 }
 
+// GetRegisteredAgents returns a list of all currently registered agent roles
+// This implements the AgentService interface
+func (s *SovietState) GetRegisteredAgents() []string {
+	return s.GetAgentRoles()
+}
+
 // CurrentBarrelHolder returns the role that currently holds the barrel
 func (s *SovietState) CurrentBarrelHolder() string {
 	if s.barrel == nil {

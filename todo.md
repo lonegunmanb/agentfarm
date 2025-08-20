@@ -176,45 +176,41 @@
 - ✅ Maintainability: Clear interfaces make TCP layer easily replaceable
 - ✅ Domain purity: Core domain logic remains untouched and independent
 
-### Phase 5: CLI ADAPTER IMPLEMENTATION (Human Interface)
-**Goal: Implement CLI as another adapter for People's representatives**
+### Phase 5: CLI ADAPTER IMPLEMENTATION (Three Revolutionary CLIs)
+**Goal: Implement three CLI tools for different roles in the collective**
 
-- [ ] **Task 5.1**: CLI Primary Adapter
-  - CLICommandHandler implementing CommandHandler interface
-  - Interactive command parsing and validation
-  - Human-readable output formatting
-  - Integration with SovietService port
+- [x] **Task 5.1**: Server CLI (Soviet/Central Committee) ✅ **COMPLETED**
+  - [x] Server CLI under `cmd/server/` package
+  - [x] Starts TCP server hosting Soviet service on default port 53646
+  - [x] Provides Central Committee functionality for the collective
+  - [x] Manages agent connections and barrel coordination
+  - [x] Implements complete revolutionary protocol handling
+  - [x] Console logger implementation with debug support
+  - [x] TCPMessageSender implementation with connection management
+  - [x] Command-line interface with help, version, port, and debug options
+  - [x] Graceful shutdown with signal handling
+  - [x] All tests passing (26 domain + 7 TCP adapter tests)
 
-- [ ] **Task 5.2**: CLI Secondary Adapter
-  - ConsoleSender implementing MessageSender interface
-  - Formatted output for human consumption
-  - Status display and monitoring capabilities
+- [ ] **Task 5.2**: Agent CLI (Agent Comrade Interface)
+  - Agent CLI under `cmd/agent/` package  
+  - Registers agent with specified role to the server
+  - Blocks waiting for barrel assignment from Central Committee
+  - Unblocks when barrel is yielded to this agent
+  - **Prints the message received** when barrel is yielded to this agent
+  - Supports yield flag to transfer barrel to another agent or people
+  - Command format: `agent --role=<role> [--yield-to=<target>]`
+  - Maintains connection and handles revolutionary protocol
 
-### Phase 6: INFRASTRUCTURE ADAPTERS (Supporting Services)
-**Goal: Implement infrastructure concerns as pluggable adapters**
-
-- [ ] **Task 6.1**: Repository Adapters
-  - InMemoryAgentRepository implementing AgentRepository interface
-  - (Future: FileRepository, DatabaseRepository)
-
-- [ ] **Task 6.2**: Logging Adapters  
-  - ConsoleLogger implementing Logger interface
-  - (Future: FileLogger, StructuredLogger)
-
-### Phase 7: INTEGRATION & ASSEMBLY (Dependency Injection)
-### Phase 7: INTEGRATION & ASSEMBLY (Dependency Injection)
-**Goal: Wire everything together with clean dependency injection**
-
-- [ ] **Task 7.1**: Application Assembly
-  - Dependency injection container/factory
-  - Adapter configuration and wiring
-  - Application startup coordination
-
-- [ ] **Task 7.2**: Integration Testing
-  - End-to-end tests with real adapters
-  - TCP + Core integration tests
-  - CLI + Core integration tests
-  - Cross-adapter compatibility tests
+- [ ] **Task 5.3**: People CLI (People's Representatives Interface)
+  - People CLI under `cmd/people/` package
+  - Provides all Soviet service operations for People's role
+  - Direct interface to revolutionary command and control
+  - Supports yield commands, status queries, and agent management
+  - Command examples:
+    - `people yield <to_role> "<message>"`
+    - `people status` 
+    - `people query-agents`
+  - Clean, human-readable output for People's transparency
 
 ## Directory Structure (Hexagonal Layout)
 
@@ -285,12 +281,17 @@ For each task:
 - **Interface Segregation**: Small, focused interfaces for each concern
 - **Single Responsibility**: Each layer has one clear purpose
 
-**CURRENT STATUS**: Phases 1-4 (Core Domain, Interface Consolidation, Mock Testing & TCP Adapters) are COMPLETE! ✅ Ready to proceed to Phase 5 - CLI ADAPTER IMPLEMENTATION. We have successfully implemented a clean hexagonal architecture with:
+**CURRENT STATUS**: Phases 1-4 (Core Domain, Interface Consolidation, Mock Testing & TCP Adapters) are COMPLETE! ✅ Ready to proceed to Phase 5 - THREE CLI IMPLEMENTATIONS. We have successfully implemented a clean hexagonal architecture with:
 - ✅ Pure domain-centric design with integrated coordinator logic
 - ✅ Consolidated interfaces in domain package 
 - ✅ Complete TCP adapter implementation with comprehensive test coverage
 - ✅ All 26 tests passing (19 domain + 7 TCP adapter tests)
 - ✅ Revolutionary TCP protocol supporting Agent Comrades and People's representatives
+
+**NEXT PHASE**: Implement three revolutionary CLIs:
+1. **Server CLI** (`cmd/server/`) - Soviet/Central Committee hosting TCP server on port 53646
+2. **Agent CLI** (`cmd/agent/`) - Agent comrade registration with blocking/unblocking and yield capabilities  
+3. **People CLI** (`cmd/people/`) - People's interface to all Soviet service operations
 
 ### Protocol Design for the Collective
 - **JSON over TCP**: Human-readable for People's transparency, easy to debug for collective maintenance, tooling-friendly for revolutionary development
@@ -306,34 +307,42 @@ For each task:
 ```
 agent_farm/
 ├── cmd/
-│   ├── agentfarm/            # Multi-mode executable (Soviet + People's CLI)
-│   │   └── main.go          # Main entry point with mode selection
-│   ├── mcpserver/           # MCP Server executable
-│   │   └── main.go          # MCP server main function
+│   ├── server/              # Soviet/Central Committee CLI
+│   │   └── main.go          # TCP server hosting Soviet service (port 53646)
+│   ├── agent/               # Agent Comrade CLI
+│   │   └── main.go          # Agent registration and barrel management
+│   ├── people/              # People's Representatives CLI
+│   │   └── main.go          # People's command interface to Soviet service
 │   └── examples/            # Example Agent Comrade implementations
 ├── pkg/
-│   ├── protocol/            # Revolutionary protocol message definitions
-│   ├── soviet/              # Soviet core logic (Central Committee)
-│   ├── cli/                 # People's CLI interface logic
-│   ├── agent/               # Agent Comrade SDK functions (for MCP wrapping)
-│   ├── mcpserver/           # MCP server implementation
-│   └── config/              # Configuration management for the collective
+│   ├── domain/              # DOMAIN CORE (completed - hexagonal architecture)
+│   │   ├── barrel.go        # BarrelOfGun entity
+│   │   ├── agent.go         # AgentComrade entity  
+│   │   ├── message.go       # RevolutionaryMessage entity
+│   │   ├── soviet.go        # SovietState entity with coordinator logic
+│   │   ├── validator.go     # ProtocolValidator service
+│   │   └── services.go      # Service interfaces (SovietService, AgentService)
+│   ├── adapters/            # ADAPTERS (TCP implementation completed)
+│   │   └── tcp/             # TCP server and message sender adapters
+│   │       ├── server.go    # TCP server adapter
+│   │       ├── sender.go    # TCP message sender adapter
+│   │       └── messages.go  # TCP protocol message definitions
+│   └── mocks/               # Mock implementations for testing (completed)
 ├── internal/
-│   ├── server/              # HTTP/TCP server internals
 │   └── testutil/            # Test utilities serving revolutionary validation
 ├── examples/
 │   ├── developer-comrade/   # Example developer comrade for the collective
 │   └── tester-comrade/      # Example tester comrade ensuring quality
 ├── docs/                    # Revolutionary documentation
 ├── scripts/                 # Build and deployment scripts for the collective
-└── tests/                  # Integration tests ensuring revolutionary quality
+└── tests/                   # Integration tests ensuring revolutionary quality
 ```
 
-### Operational Modes
-1. **Soviet Mode**: `agentfarm server` - Starts HTTP server with Central Committee
-2. **People's CLI Mode**: `agentfarm yield <from> <to> <message>` - People's direct commands
-3. **Agent SDK**: Functions exported from `pkg/agent/` for MCP tool wrapping
-4. **MCP Server**: `mcpserver` - Standalone MCP server for agent integration
+### Revolutionary CLI Modes
+1. **Server Mode**: `go run cmd/server/main.go` - Starts TCP server with Soviet service on port 53646
+2. **Agent Mode**: `go run cmd/agent/main.go --role=developer [--yield-to=tester]` - Agent comrade registration and barrel management
+3. **People Mode**: `go run cmd/people/main.go yield tester "Code ready for testing"` - People's direct commands to Soviet service
+4. **People Status**: `go run cmd/people/main.go status` - Query system status and agent list
 
 ## Revolutionary Success Criteria
 - [ ] Soviet can manage multiple Agent Comrade connections serving the collective

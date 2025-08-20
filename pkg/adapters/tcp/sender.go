@@ -5,15 +5,13 @@ import (
 	"fmt"
 	"net"
 	"sync"
-
-	"github.com/lonegunmanb/agentfarm/pkg/domain"
 )
 
-// TCPMessageSender implements the MessageSender port for TCP communication
-// This adapter sends activation messages to agent comrades over their TCP connections
+// TCPMessageSender implements MessageSender interface for TCP communication
+// This adapter manages TCP connections and sends messages to agent comrades
 type TCPMessageSender struct {
 	connections map[string]net.Conn // role -> connection
-	mutex       sync.RWMutex
+	mu          sync.RWMutex
 }
 
 // NewTCPMessageSender creates a new TCP message sender
@@ -23,86 +21,71 @@ func NewTCPMessageSender() *TCPMessageSender {
 	}
 }
 
-// SendActivation sends an activation message to an agent over TCP
-func (t *TCPMessageSender) SendActivation(role string, payload string) error {
-	t.mutex.RLock()
-	conn, exists := t.connections[role]
-	t.mutex.RUnlock()
+// RegisterConnection registers a TCP connection for a specific role
+func (s *TCPMessageSender) RegisterConnection(role string, conn net.Conn) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.connections[role] = conn
+}
+
+// UnregisterConnection removes a TCP connection for a specific role
+func (s *TCPMessageSender) UnregisterConnection(role string) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if conn, exists := s.connections[role]; exists {
+		conn.Close()
+		delete(s.connections, role)
+	}
+}
+
+// SendActivation sends an activation message to an agent comrade via TCP
+func (s *TCPMessageSender) SendActivation(role string, payload string) error {
+	s.mu.RLock()
+	conn, exists := s.connections[role]
+	s.mu.RUnlock()
 
 	if !exists {
-		return fmt.Errorf("no connection found for agent role: %s", role)
+		return fmt.Errorf("no connection found for role: %s", role)
 	}
 
-	activateMsg := ActivateMessage{
-		Type:     "ACTIVATE",
-		FromRole: "people", // Could be enhanced to track actual from_role
-		Payload:  payload,
+	// Create activation message
+	message := ActivateMessage{
+		Type:    "ACTIVATE",
+		Payload: payload,
 	}
 
-	msgData, err := json.Marshal(activateMsg)
+	// Serialize to JSON
+	data, err := json.Marshal(message)
 	if err != nil {
-		return fmt.Errorf("failed to marshal activation message: %w", err)
+		return fmt.Errorf("failed to serialize activation message: %w", err)
 	}
 
-	msgData = append(msgData, '\n') // Line delimiter for TCP protocol
-	_, err = conn.Write(msgData)
+	// Send with newline delimiter
+	data = append(data, '\n')
+	_, err = conn.Write(data)
 	if err != nil {
-		return fmt.Errorf("failed to send activation message to %s: %w", role, err)
+		return fmt.Errorf("failed to send activation message: %w", err)
 	}
 
 	return nil
 }
 
-// RegisterConnection registers a TCP connection for an agent role
-// This is called by the TCP server when agents connect
-func (t *TCPMessageSender) RegisterConnection(role string, conn net.Conn) {
-	t.mutex.Lock()
-	defer t.mutex.Unlock()
-	t.connections[role] = conn
-}
+// GetConnectedRoles returns a list of all currently connected roles
+func (s *TCPMessageSender) GetConnectedRoles() []string {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
 
-// UnregisterConnection removes a TCP connection for an agent role
-// This is called by the TCP server when agents disconnect
-func (t *TCPMessageSender) UnregisterConnection(role string) {
-	t.mutex.Lock()
-	defer t.mutex.Unlock()
-	delete(t.connections, role)
-}
-
-// GetConnectedRoles returns a list of roles that have active connections
-func (t *TCPMessageSender) GetConnectedRoles() []string {
-	t.mutex.RLock()
-	defer t.mutex.RUnlock()
-
-	roles := make([]string, 0, len(t.connections))
-	for role := range t.connections {
+	roles := make([]string, 0, len(s.connections))
+	for role := range s.connections {
 		roles = append(roles, role)
 	}
 	return roles
 }
 
-// IsConnected checks if a role has an active connection
-func (t *TCPMessageSender) IsConnected(role string) bool {
-	t.mutex.RLock()
-	defer t.mutex.RUnlock()
-	_, exists := t.connections[role]
+// IsConnected checks if a specific role has an active connection
+func (s *TCPMessageSender) IsConnected(role string) bool {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	_, exists := s.connections[role]
 	return exists
 }
-
-// Close closes all connections
-func (t *TCPMessageSender) Close() error {
-	t.mutex.Lock()
-	defer t.mutex.Unlock()
-
-	for role, conn := range t.connections {
-		if err := conn.Close(); err != nil {
-			// Log error but continue closing other connections
-			fmt.Printf("Error closing connection for %s: %v\n", role, err)
-		}
-	}
-	t.connections = make(map[string]net.Conn)
-	return nil
-}
-
-// Ensure TCPMessageSender implements the MessageSender interface
-var _ domain.MessageSender = (*TCPMessageSender)(nil)
