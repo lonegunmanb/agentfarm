@@ -165,6 +165,8 @@ func (ac *AgentClient) handleMessage(line string) error {
 		return ac.handleActivateMessage(line)
 	case "ERROR":
 		return ac.handleErrorMessage(line)
+	case "ACK_REGISTER":
+		return ac.handleAckRegisterMessage(line)
 	default:
 		fmt.Printf("Received unknown message type: %s\n", baseMsg.Type)
 	}
@@ -204,6 +206,21 @@ func (ac *AgentClient) handleErrorMessage(line string) error {
 	}
 
 	fmt.Printf("❌ Error from Central Committee: %s\n", errorMsg.Message)
+	return nil
+}
+
+func (ac *AgentClient) handleAckRegisterMessage(line string) error {
+	var ackMsg tcp.AckRegisterMessage
+	if err := json.Unmarshal([]byte(line), &ackMsg); err != nil {
+		return fmt.Errorf("failed to parse ACK_REGISTER message: %w", err)
+	}
+
+	fmt.Printf("📋 Registration acknowledged: %s\n", ackMsg.Message)
+	if ackMsg.Status == "success" {
+		fmt.Printf("✅ Agent comrade %s successfully enrolled in the collective\n", ac.role)
+	} else {
+		fmt.Printf("⚠️  Registration status: %s\n", ackMsg.Status)
+	}
 	return nil
 }
 
