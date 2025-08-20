@@ -191,15 +191,17 @@
   - [x] Graceful shutdown with signal handling
   - [x] All tests passing (26 domain + 7 TCP adapter tests)
 
-- [ ] **Task 5.2**: Agent CLI (Agent Comrade Interface)
-  - Agent CLI under `cmd/agent/` package  
-  - Registers agent with specified role to the server
-  - Blocks waiting for barrel assignment from Central Committee
-  - Unblocks when barrel is yielded to this agent
-  - **Prints the message received** when barrel is yielded to this agent
-  - Supports yield flag to transfer barrel to another agent or people
-  - Command format: `agent --role=<role> [--yield-to=<target>]`
-  - Maintains connection and handles revolutionary protocol
+- [x] **Task 5.2**: Agent CLI (Agent Comrade Interface) ✅ **COMPLETED**
+  - [x] Agent CLI under `cmd/agent/` package  
+  - [x] Registers agent with specified role to the server
+  - [x] Blocks waiting for barrel assignment from Central Committee
+  - [x] Exits immediately when barrel is yielded to this agent (one-shot execution)
+  - [x] **Prints the message received** when barrel is yielded to this agent
+  - [x] Supports yield flag to transfer barrel to another agent or people before exiting
+  - [x] Command format: `agent --role=<role> [--yield-to=<target>] [--yield-msg=<message>]`
+  - [x] Maintains connection and handles revolutionary protocol with auto-reconnection
+  - [x] Graceful shutdown handling and proper error messages
+  - [x] Help and version commands implemented
 
 - [ ] **Task 5.3**: People CLI (People's Representatives Interface)
   - People CLI under `cmd/people/` package
