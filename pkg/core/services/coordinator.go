@@ -185,18 +185,6 @@ func (c *SovietCoordinator) ProcessYield(message domain.YieldMessage) error {
 
 	// Handle external operations if dependencies are available
 
-	// Send deactivation to source agent (if not people)
-	if fromRole != "people" && c.sender != nil {
-		if err := c.sender.SendDeactivation(fromRole, "Barrel transferred"); err != nil {
-			if c.logger != nil {
-				c.logger.Error("Failed to send deactivation message", map[string]interface{}{
-					"role":  fromRole,
-					"error": err.Error(),
-				})
-			}
-		}
-	}
-
 	// Send activation to target agent (if not people)
 	if toRole != "people" && c.sender != nil {
 		if err := c.sender.SendActivation(toRole, payload); err != nil {

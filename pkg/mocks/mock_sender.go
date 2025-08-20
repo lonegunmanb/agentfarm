@@ -37,42 +37,6 @@ func (m *MockMessageSender) SendActivation(role string, payload string) error {
 	return nil
 }
 
-// SendDeactivation sends a deactivation message to an agent
-func (m *MockMessageSender) SendDeactivation(role string, reason string) error {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-
-	message := ports.SentMessage{
-		Recipient: role,
-		Type:      "deactivation",
-		Payload:   reason,
-		Metadata: map[string]interface{}{
-			"action": "deactivate",
-		},
-	}
-
-	m.messages = append(m.messages, message)
-	return nil
-}
-
-// SendNotification sends a general notification to an agent
-func (m *MockMessageSender) SendNotification(role string, message string) error {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-
-	sentMessage := ports.SentMessage{
-		Recipient: role,
-		Type:      "notification",
-		Payload:   message,
-		Metadata: map[string]interface{}{
-			"action": "notify",
-		},
-	}
-
-	m.messages = append(m.messages, sentMessage)
-	return nil
-}
-
 // GetSentMessages returns all sent messages (for testing)
 func (m *MockMessageSender) GetSentMessages() []ports.SentMessage {
 	m.mu.RLock()
