@@ -82,16 +82,7 @@ func (c *SovietCoordinator) DeregisterAgent(role string) error {
 }
 
 // ProcessYield handles yield requests and manages barrel transfers
-func (c *SovietCoordinator) ProcessYield(message *domain.RevolutionaryMessage) error {
-	if message == nil {
-		return fmt.Errorf("message cannot be nil")
-	}
-
-	// Validate that this is actually a yield message
-	if message.Type() != domain.MessageTypeYield {
-		return fmt.Errorf("expected yield message, got %s", message.Type().String())
-	}
-
+func (c *SovietCoordinator) ProcessYield(message domain.YieldMessage) error {
 	fromRole := message.FromRole()
 	toRole := message.ToRole()
 	payload := message.Payload()

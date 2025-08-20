@@ -232,8 +232,7 @@ func (suite *SovietCoordinatorTestSuite) Test_ProcessYield_ValidYield_Successful
 	developer.TransitionTo(domain.AgentStateWorking)
 
 	// Create yield message
-	message := domain.NewRevolutionaryMessage(
-		domain.MessageTypeYield,
+	message := domain.NewYieldMessage(
 		"developer",
 		"tester",
 		"Code ready for testing",
@@ -259,8 +258,7 @@ func (suite *SovietCoordinatorTestSuite) Test_ProcessYield_InvalidSender_Returns
 	assert.Equal(suite.T(), "people", suite.barrel.CurrentHolder())
 
 	// Try to yield from developer (who doesn't hold barrel)
-	message := domain.NewRevolutionaryMessage(
-		domain.MessageTypeYield,
+	message := domain.NewYieldMessage(
 		"developer",
 		"tester",
 		"Unauthorized yield attempt",
@@ -283,8 +281,7 @@ func (suite *SovietCoordinatorTestSuite) Test_ProcessYield_NonExistentTarget_Ret
 	developer.TransitionTo(domain.AgentStateWorking)
 
 	// Try to yield to non-existent agent
-	message := domain.NewRevolutionaryMessage(
-		domain.MessageTypeYield,
+	message := domain.NewYieldMessage(
 		"developer",
 		"nonexistent",
 		"Yield to nowhere",
@@ -307,8 +304,7 @@ func (suite *SovietCoordinatorTestSuite) Test_ProcessYield_YieldToPeople_Success
 	developer.TransitionTo(domain.AgentStateWorking)
 
 	// Yield to people
-	message := domain.NewRevolutionaryMessage(
-		domain.MessageTypeYield,
+	message := domain.NewYieldMessage(
 		"developer",
 		"people",
 		"Task completed, returning to people",
@@ -319,32 +315,6 @@ func (suite *SovietCoordinatorTestSuite) Test_ProcessYield_YieldToPeople_Success
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), "people", suite.barrel.CurrentHolder())
 	assert.Equal(suite.T(), domain.AgentStateWaiting, developer.State())
-}
-
-// Test_ProcessYield_InvalidMessageType_ReturnsError tests processing non-yield message
-func (suite *SovietCoordinatorTestSuite) Test_ProcessYield_InvalidMessageType_ReturnsError() {
-	// Register agent
-	developer := createTestAgent("developer")
-	suite.coordinator.RegisterAgent(developer)
-
-	// Transfer barrel to developer
-	suite.barrel.TransferTo("developer", "Initial transfer")
-	developer.TransitionTo(domain.AgentStateWorking)
-
-	// Try to process a REGISTER message through ProcessYield (should fail)
-	message := domain.NewRevolutionaryMessage(
-		domain.MessageTypeRegister,
-		"developer",
-		"",
-		"This is not a yield message",
-	)
-
-	err := suite.coordinator.ProcessYield(message)
-
-	assert.Error(suite.T(), err)
-	assert.Contains(suite.T(), err.Error(), "expected yield message, got REGISTER")
-	// Barrel should remain with developer (no change)
-	assert.Equal(suite.T(), "developer", suite.barrel.CurrentHolder())
 }
 
 // Test_GetAgentState_RegisteredAgent_ReturnsState tests getting agent state
