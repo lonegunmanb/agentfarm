@@ -79,9 +79,11 @@ func (suite *SovietCoordinatorTestSuite) Test_NewSovietCoordinator_CreatesValidI
 func (suite *SovietCoordinatorTestSuite) Test_RegisterAgent_SuccessfulRegistration() {
 	agent := createTestAgent("developer")
 
-	err := suite.coordinator.RegisterAgent(agent)
+	shouldResume, lastMessage, err := suite.coordinator.RegisterAgent(agent)
 
 	assert.NoError(suite.T(), err)
+	assert.False(suite.T(), shouldResume) // New agent shouldn't resume work (barrel is with people)
+	assert.Empty(suite.T(), lastMessage)
 	assert.True(suite.T(), suite.soviet.IsAgentRegistered("developer"))
 	assert.True(suite.T(), agent.IsConnected())
 	assert.Equal(suite.T(), domain.AgentStateWaiting, agent.State())
@@ -93,12 +95,12 @@ func (suite *SovietCoordinatorTestSuite) Test_RegisterAgent_DuplicateRole_Replac
 	agent2 := createTestAgent("developer") // Same role, different instance
 
 	// First registration should succeed
-	err := suite.coordinator.RegisterAgent(agent1)
+	_, _, err := suite.coordinator.RegisterAgent(agent1)
 	assert.NoError(suite.T(), err)
 	assert.True(suite.T(), agent1.IsConnected())
 
 	// Second registration with same role should succeed and replace the first
-	err = suite.coordinator.RegisterAgent(agent2)
+	_, _, err = suite.coordinator.RegisterAgent(agent2)
 	assert.NoError(suite.T(), err)
 
 	// The new agent should be connected and registered
@@ -118,7 +120,7 @@ func (suite *SovietCoordinatorTestSuite) Test_RegisterAgent_ReplacementWithBarre
 	agent1 := createTestAgent("developer")
 
 	// Initial registration and barrel assignment
-	err := suite.coordinator.RegisterAgent(agent1)
+	_, _, err := suite.coordinator.RegisterAgent(agent1)
 	assert.NoError(suite.T(), err)
 	suite.barrel.TransferTo("developer", "Working on feature")
 	agent1.TransitionTo(domain.AgentStateWorking)
@@ -129,24 +131,25 @@ func (suite *SovietCoordinatorTestSuite) Test_RegisterAgent_ReplacementWithBarre
 
 	// New agent with same role registers (reconnection/replacement scenario)
 	agent2 := createTestAgent("developer")
-	err = suite.coordinator.RegisterAgent(agent2)
+	shouldResume, lastMessage, err := suite.coordinator.RegisterAgent(agent2)
 	assert.NoError(suite.T(), err)
+
+	// Since the "developer" role holds the barrel, the new agent should resume work
+	assert.True(suite.T(), shouldResume)
+	assert.Equal(suite.T(), "Working on feature", lastMessage)
 
 	// Old agent should be disconnected
 	assert.False(suite.T(), agent1.IsConnected())
 
-	// New agent should be registered and connected
+	// New agent should be registered, connected, and working
 	assert.True(suite.T(), agent2.IsConnected())
+	assert.Equal(suite.T(), domain.AgentStateWorking, agent2.State())
 	assert.Equal(suite.T(), agent2, suite.soviet.GetAgent("developer"))
 
 	// Barrel should still be held by "developer" role (but new agent instance)
 	assert.Equal(suite.T(), "developer", suite.barrel.CurrentHolder())
 
-	// New agent should be able to resume work if they check for reconnection
-	shouldResume, lastMessage, err := suite.coordinator.HandleReconnection("developer")
-	assert.NoError(suite.T(), err)
-	assert.True(suite.T(), shouldResume)
-	assert.Equal(suite.T(), "Working on feature", lastMessage)
+	// The agent is already working due to unified registration handling the reconnection automatically
 	assert.Equal(suite.T(), domain.AgentStateWorking, agent2.State())
 }
 
@@ -156,10 +159,10 @@ func (suite *SovietCoordinatorTestSuite) Test_RegisterAgent_DifferentRoles_BothS
 	tester := createTestAgent("tester")
 
 	// Both registrations should succeed (different roles)
-	err := suite.coordinator.RegisterAgent(developer)
+	_, _, err := suite.coordinator.RegisterAgent(developer)
 	assert.NoError(suite.T(), err)
 
-	err = suite.coordinator.RegisterAgent(tester)
+	_, _, err = suite.coordinator.RegisterAgent(tester)
 	assert.NoError(suite.T(), err)
 
 	// Both agents should be connected and registered
@@ -177,7 +180,7 @@ func (suite *SovietCoordinatorTestSuite) Test_RegisterAgent_DifferentRoles_BothS
 
 // Test_RegisterAgent_NilAgent_ReturnsError tests nil agent registration
 func (suite *SovietCoordinatorTestSuite) Test_RegisterAgent_NilAgent_ReturnsError() {
-	err := suite.coordinator.RegisterAgent(nil)
+	_, _, err := suite.coordinator.RegisterAgent(nil)
 
 	assert.Error(suite.T(), err)
 	assert.Contains(suite.T(), err.Error(), "agent cannot be nil")
@@ -358,34 +361,40 @@ func (suite *SovietCoordinatorTestSuite) Test_GetRegisteredAgents_ReturnsAgentLi
 	assert.Contains(suite.T(), agents, "tester")
 }
 
-// Test_HandleReconnection_BarrelHolderReconnects_ResumesWork tests reconnection of barrel holder
-func (suite *SovietCoordinatorTestSuite) Test_HandleReconnection_BarrelHolderReconnects_ResumesWork() {
+// Test_RegisterAgent_BarrelHolderReconnects_ResumesWork tests unified registration handling reconnection of barrel holder
+func (suite *SovietCoordinatorTestSuite) Test_RegisterAgent_BarrelHolderReconnects_ResumesWork() {
 	// Register agent
 	developer := createTestAgent("developer")
-	suite.coordinator.RegisterAgent(developer)
+	_, _, _ = suite.coordinator.RegisterAgent(developer)
 
 	// Transfer barrel to developer and make them work
 	suite.barrel.TransferTo("developer", "Work assignment")
 	developer.TransitionTo(domain.AgentStateWorking)
 
-	// Simulate disconnection
+	// Simulate disconnection (agent instance lost/crashed)
 	developer.SetConnected(false)
 
-	// Handle reconnection
-	shouldResume, lastMessage, err := suite.coordinator.HandleReconnection("developer")
+	// Simulate reconnection: new agent instance with same role registers
+	reconnectedDeveloper := createTestAgent("developer")
+	shouldResume, lastMessage, err := suite.coordinator.RegisterAgent(reconnectedDeveloper)
 
+	// The registration should handle reconnection automatically
 	assert.NoError(suite.T(), err)
-	assert.True(suite.T(), shouldResume)
+	assert.True(suite.T(), shouldResume) // Should resume because "developer" role holds barrel
 	assert.Equal(suite.T(), "Work assignment", lastMessage)
-	assert.True(suite.T(), developer.IsConnected())
-	assert.Equal(suite.T(), domain.AgentStateWorking, developer.State())
+	assert.True(suite.T(), reconnectedDeveloper.IsConnected())
+	assert.Equal(suite.T(), domain.AgentStateWorking, reconnectedDeveloper.State())
+	
+	// Old agent should be disconnected, new agent should be in registry
+	assert.False(suite.T(), developer.IsConnected())
+	assert.Equal(suite.T(), reconnectedDeveloper, suite.soviet.GetAgent("developer"))
 }
 
 // Test_RegisterAgent_ReconnectionWorkflow_ProperSequence tests the correct reconnection workflow
 func (suite *SovietCoordinatorTestSuite) Test_RegisterAgent_ReconnectionWorkflow_ProperSequence() {
 	// Step 1: Agent registers and gets barrel
 	developer := createTestAgent("developer")
-	suite.coordinator.RegisterAgent(developer)
+	_, _, _ = suite.coordinator.RegisterAgent(developer)
 	suite.barrel.TransferTo("developer", "Initial work")
 	developer.TransitionTo(domain.AgentStateWorking)
 
@@ -393,37 +402,34 @@ func (suite *SovietCoordinatorTestSuite) Test_RegisterAgent_ReconnectionWorkflow
 	developer.SetConnected(false)
 
 	// Step 3: Agent process restarts and registers again (same role)
-	// This should replace the disconnected agent instance
+	// This should replace the disconnected agent instance and automatically handle reconnection
 	reconnectedAgent := createTestAgent("developer")
-	err := suite.coordinator.RegisterAgent(reconnectedAgent)
+	shouldResume, lastMessage, err := suite.coordinator.RegisterAgent(reconnectedAgent)
 
-	// Step 4: Registration should succeed and replace the old agent
-	assert.NoError(suite.T(), err)
-	assert.True(suite.T(), reconnectedAgent.IsConnected())
-	assert.False(suite.T(), developer.IsConnected()) // Old agent should be disconnected
-
-	// Step 5: New agent should be able to resume work (barrel is still with "developer" role)
-	shouldResume, lastMessage, err := suite.coordinator.HandleReconnection("developer")
+	// Step 4: Registration should succeed and replace the old agent, automatically resuming work
 	assert.NoError(suite.T(), err)
 	assert.True(suite.T(), shouldResume) // Should resume because "developer" role held the barrel
 	assert.Equal(suite.T(), "Initial work", lastMessage)
+	assert.True(suite.T(), reconnectedAgent.IsConnected())
+	assert.False(suite.T(), developer.IsConnected()) // Old agent should be disconnected
+	assert.Equal(suite.T(), domain.AgentStateWorking, reconnectedAgent.State())
 }
 
 // Test_RegisterAgent_MultipleReplacements_OnlyLatestAgentActive tests multiple rapid replacements
 func (suite *SovietCoordinatorTestSuite) Test_RegisterAgent_MultipleReplacements_OnlyLatestAgentActive() {
 	// Register first agent
 	agent1 := createTestAgent("developer")
-	err := suite.coordinator.RegisterAgent(agent1)
+	_, _, err := suite.coordinator.RegisterAgent(agent1)
 	assert.NoError(suite.T(), err)
 
 	// Register second agent (should replace first)
 	agent2 := createTestAgent("developer")
-	err = suite.coordinator.RegisterAgent(agent2)
+	_, _, err = suite.coordinator.RegisterAgent(agent2)
 	assert.NoError(suite.T(), err)
 
 	// Register third agent (should replace second)
 	agent3 := createTestAgent("developer")
-	err = suite.coordinator.RegisterAgent(agent3)
+	_, _, err = suite.coordinator.RegisterAgent(agent3)
 	assert.NoError(suite.T(), err)
 
 	// Only the latest agent should be connected and registered
@@ -433,11 +439,11 @@ func (suite *SovietCoordinatorTestSuite) Test_RegisterAgent_MultipleReplacements
 	assert.Equal(suite.T(), agent3, suite.soviet.GetAgent("developer"))
 }
 
-// Test_HandleReconnection_NonBarrelHolderReconnects_NoResume tests reconnection of non-barrel holder
-func (suite *SovietCoordinatorTestSuite) Test_HandleReconnection_NonBarrelHolderReconnects_NoResume() {
+// Test_RegisterAgent_NonBarrelHolderReconnects_NoResume tests unified registration for non-barrel holder
+func (suite *SovietCoordinatorTestSuite) Test_RegisterAgent_NonBarrelHolderReconnects_NoResume() {
 	// Register agent
 	developer := createTestAgent("developer")
-	suite.coordinator.RegisterAgent(developer)
+	_, _, _ = suite.coordinator.RegisterAgent(developer)
 
 	// Barrel remains with people, developer is just waiting
 	assert.Equal(suite.T(), "people", suite.barrel.CurrentHolder())
@@ -445,20 +451,17 @@ func (suite *SovietCoordinatorTestSuite) Test_HandleReconnection_NonBarrelHolder
 	// Simulate disconnection
 	developer.SetConnected(false)
 
-	// Handle reconnection
-	shouldResume, lastMessage, err := suite.coordinator.HandleReconnection("developer")
+	// Simulate reconnection: new agent instance registers with same role
+	reconnectedDeveloper := createTestAgent("developer")
+	shouldResume, lastMessage, err := suite.coordinator.RegisterAgent(reconnectedDeveloper)
 
 	assert.NoError(suite.T(), err)
-	assert.False(suite.T(), shouldResume)
+	assert.False(suite.T(), shouldResume) // Should not resume (barrel is with people)
 	assert.Empty(suite.T(), lastMessage)
-	assert.True(suite.T(), developer.IsConnected())
-	assert.Equal(suite.T(), domain.AgentStateWaiting, developer.State())
-}
-
-// Test_HandleReconnection_NonExistentAgent_ReturnsError tests reconnection of non-existent agent
-func (suite *SovietCoordinatorTestSuite) Test_HandleReconnection_NonExistentAgent_ReturnsError() {
-	_, _, err := suite.coordinator.HandleReconnection("nonexistent")
-
-	assert.Error(suite.T(), err)
-	assert.Contains(suite.T(), err.Error(), "agent with role 'nonexistent' not found")
+	assert.True(suite.T(), reconnectedDeveloper.IsConnected())
+	assert.Equal(suite.T(), domain.AgentStateWaiting, reconnectedDeveloper.State())
+	
+	// Old agent should be disconnected, new agent should be in registry
+	assert.False(suite.T(), developer.IsConnected())
+	assert.Equal(suite.T(), reconnectedDeveloper, suite.soviet.GetAgent("developer"))
 }

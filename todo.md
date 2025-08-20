@@ -115,6 +115,14 @@
   - [x] Integration tests with CoordinatorAdapter proving interface design works
   - [x] Full workflow validation through ports demonstrating proper separation
 
+- [x] **Task 2.1.1**: Interface Simplification - Unified Registration ✅ **COMPLETED**
+  - [x] Updated documentation to reflect unified registration/reconnection approach
+  - [x] Enhanced RegisterAgent to include reconnection logic (return shouldResume, lastMessage)
+  - [x] Remove HandleReconnection method from interface (functionality merged into RegisterAgent)
+  - [x] Updated implementation to handle reconnection cases in RegisterAgent
+  - [x] Updated all tests to reflect new unified interface
+  - [x] Verified all existing functionality preserved with cleaner interface
+
 - [ ] **Task 2.2**: Secondary Ports (Driven by the application) **SKIPPED**
   - **DECISION**: No secondary ports needed currently - core domain has no external dependencies
   - Current implementation uses in-memory storage with zero external dependencies

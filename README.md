@@ -49,9 +49,12 @@ This tool provides the ideological framework (Agent SDK) - a library embedded in
 ### 4.1 Central Committee (Soviet)
 **Connection Management**: Accepts and maintains TCP long connections from all Agent Comrades, while also accepting direct connections from the People's representatives for revolutionary guidance.
 
-**Registration**: After agent comrades connect, they must first declare their service to the collective through registration messages. The Central Committee maintains a real-time roster from role names to their network connections, ensuring accountability.
-
-**Agent Reconnection & Recovery**: When an agent comrade reconnects after disconnection, the Central Committee must check if the sacred barrel of gun belongs to this returning comrade. If so, the Central Committee immediately sends an ACTIVATE message to resume the revolutionary workflow, preventing system-wide blocking caused by offline agents.
+**Registration & Automatic Reconnection**: After agent comrades connect, they declare their service to the collective through registration messages. The revolutionary system intelligently handles both new registrations and reconnections through a unified process. When an agent comrade connects (whether for the first time or after memory loss/disconnection), they simply register their role, and the Central Committee automatically:
+- Replaces any existing agent with the same role (ensuring only one agent per role)
+- Checks if the registered role currently holds the sacred barrel of gun
+- If the role holds the barrel, immediately sends an ACTIVATE message to resume revolutionary workflow
+- If the role doesn't hold the barrel, places the agent in disciplined waiting state
+This unified approach eliminates the confusion of agents needing to choose between registration and reconnection, as the Central Committee handles all cases intelligently.
 
 **Barrel of Gun Management & Revolutionary Discipline**:
 - Internally maintains the sacred record currentBarrelHolder (string)
@@ -68,7 +71,7 @@ This tool provides the ideological framework (Agent SDK) - a library embedded in
 ### 4.2 Agent Comrades
 Agent Comrade processes embody revolutionary discipline through their state cycle:
 
-1. **Startup & Registration**: Process awakens, connects to Central Committee through Agent SDK and declares service to the collective
+1. **Startup & Unified Registration**: Process awakens, connects to Central Committee through Agent SDK and declares service to the collective. The Central Committee intelligently handles whether this is a new registration or reconnection, automatically resuming work if the agent's role currently holds the barrel.
 2. **Waiting (Disciplined Readiness)**: After successful registration, enters respectful waiting state for orders from the Central Committee
 3. **Revolution in Progress (Working)**: After receiving "activation" orders, begins productive work in service to the collective
 4. **Yielding (Revolutionary Transfer)**: After completing labor assignment, calls yield(target_role, progress_report) function provided by Agent SDK to serve the next phase of collective work
@@ -101,9 +104,10 @@ Defines revolutionary communication protocols between Agent Comrades and the Cen
 
 ### Agent Comrades -> Central Committee Messages
 
-**REGISTER**
+**REGISTER** (Unified Registration/Reconnection)
 - User: Agent Comrade
 - Format: `{"type": "REGISTER", "role": "developer"}`
+- Note: Handles both new registration and reconnection automatically. If the role currently holds the barrel, agent will be immediately activated.
 
 **YIELD**
 - User: Agent Comrade, People's Representatives

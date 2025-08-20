@@ -6,9 +6,13 @@ import "github.com/lonegunmanb/agentfarm/pkg/core/domain"
 // This interface represents the use cases that drive the Agent Farm application
 // External adapters (TCP, CLI, etc.) will call these methods to interact with the core domain
 type SovietService interface {
-	// RegisterAgent registers a new agent comrade or replaces an existing one with the same role
-	// This is called when an agent connects and declares service to the collective
-	RegisterAgent(agent *domain.AgentComrade) error
+	// RegisterAgent registers a new agent comrade or handles reconnection intelligently
+	// When an agent connects (new or reconnection), they simply register their role.
+	// The system automatically handles both cases:
+	// - For new agents: registers and places in waiting state
+	// - For reconnections: replaces existing agent and resumes work if role holds barrel
+	// Returns: (shouldResume, lastMessage, error) where shouldResume indicates if agent should start working
+	RegisterAgent(agent *domain.AgentComrade) (bool, string, error)
 	
 	// ProcessYield handles yield requests and manages barrel transfers
 	// This is called when an agent comrade yields the barrel to another agent or to the people
@@ -17,11 +21,6 @@ type SovietService interface {
 	// DeregisterAgent removes an agent from the collective
 	// This is called when an agent disconnects or is manually removed
 	DeregisterAgent(role string) error
-	
-	// HandleReconnection handles the reconnection of an agent and determines if they should resume work
-	// Returns: (shouldResume, lastMessage, error)
-	// This is called when a previously registered agent reconnects to the collective
-	HandleReconnection(role string) (bool, string, error)
 	
 	// QueryStatus returns the current status of the collective including all agents and barrel state
 	// This is called by People's representatives to inspect the collective

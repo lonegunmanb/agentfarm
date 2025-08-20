@@ -24,11 +24,12 @@ func NewSovietCoordinator(soviet *domain.SovietState) *SovietCoordinator {
 	}
 }
 
-// RegisterAgent registers a new agent or replaces an existing agent with the same role
-// This implements the new protocol where same-role registration replaces the existing agent
-func (c *SovietCoordinator) RegisterAgent(agent *domain.AgentComrade) error {
+// RegisterAgent registers a new agent or handles reconnection intelligently
+// This unified method handles both new registrations and reconnections automatically
+// Returns: (shouldResume, lastMessage, error) where shouldResume indicates if agent should start working
+func (c *SovietCoordinator) RegisterAgent(agent *domain.AgentComrade) (bool, string, error) {
 	if agent == nil {
-		return fmt.Errorf("agent cannot be nil")
+		return false, "", fmt.Errorf("agent cannot be nil")
 	}
 
 	role := agent.Role()
@@ -41,21 +42,31 @@ func (c *SovietCoordinator) RegisterAgent(agent *domain.AgentComrade) error {
 		// Unregister the existing agent to make room for the new one
 		err := c.soviet.UnregisterAgent(role)
 		if err != nil {
-			return fmt.Errorf("failed to unregister existing agent: %w", err)
+			return false, "", fmt.Errorf("failed to unregister existing agent: %w", err)
 		}
 	}
 
 	// Register the new agent
 	err := c.soviet.RegisterAgent(agent)
 	if err != nil {
-		return fmt.Errorf("failed to register agent: %w", err)
+		return false, "", fmt.Errorf("failed to register agent: %w", err)
 	}
 
-	// Set the agent as connected and in waiting state
+	// Set the agent as connected and in waiting state initially
 	agent.SetConnected(true)
 	agent.TransitionTo(domain.AgentStateWaiting)
 
-	return nil
+	// Check if this agent role should resume work (if they hold the barrel)
+	barrel := c.soviet.GetBarrel()
+	if barrel != nil && barrel.IsHeldBy(role) {
+		// Agent should resume work - activate them
+		lastMessage := barrel.LastMessage()
+		agent.TransitionTo(domain.AgentStateWorking)
+		return true, lastMessage, nil
+	}
+
+	// Agent doesn't hold barrel, remains in waiting state
+	return false, "", nil
 }
 
 // DeregisterAgent removes an agent from the collective
@@ -140,29 +151,4 @@ func (c *SovietCoordinator) GetBarrelStatus() string {
 // GetRegisteredAgents returns a list of all registered agent roles
 func (c *SovietCoordinator) GetRegisteredAgents() []string {
 	return c.soviet.GetAgentRoles()
-}
-
-// HandleReconnection handles the reconnection of an agent and determines if they should resume work
-// Returns: (shouldResume, lastMessage, error)
-func (c *SovietCoordinator) HandleReconnection(role string) (bool, string, error) {
-	agent := c.soviet.GetAgent(role)
-	if agent == nil {
-		return false, "", fmt.Errorf("agent with role '%s' not found", role)
-	}
-
-	// Set the agent as connected
-	agent.SetConnected(true)
-
-	// Check if this agent should resume work (if they hold the barrel)
-	barrel := c.soviet.GetBarrel()
-	if barrel != nil && barrel.IsHeldBy(role) {
-		// Agent should resume work - activate them
-		lastMessage := barrel.LastMessage()
-		agent.TransitionTo(domain.AgentStateWorking)
-		return true, lastMessage, nil
-	}
-
-	// Agent doesn't hold barrel, just set to waiting
-	agent.TransitionTo(domain.AgentStateWaiting)
-	return false, "", nil
 }
