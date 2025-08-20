@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/lonegunmanb/agentfarm/pkg/core/domain"
+	"github.com/lonegunmanb/agentfarm/pkg/ports"
 )
 
 // SovietCoordinator implements the core business logic for managing agents and barrel transfers
@@ -11,6 +12,12 @@ import (
 type SovietCoordinator struct {
 	soviet    *domain.SovietState
 	validator *ProtocolValidator
+
+	// External dependencies for side effects
+	repo   ports.AgentRepository
+	sender ports.MessageSender
+	events ports.EventPublisher
+	logger ports.Logger
 }
 
 // NewSovietCoordinator creates a new coordinator with the given soviet state
@@ -21,6 +28,27 @@ func NewSovietCoordinator(soviet *domain.SovietState) *SovietCoordinator {
 	return &SovietCoordinator{
 		soviet:    soviet,
 		validator: NewProtocolValidator(soviet),
+	}
+}
+
+// NewSovietCoordinatorWithDependencies creates a new coordinator with external dependencies
+func NewSovietCoordinatorWithDependencies(
+	soviet *domain.SovietState,
+	repo ports.AgentRepository,
+	sender ports.MessageSender,
+	events ports.EventPublisher,
+	logger ports.Logger,
+) *SovietCoordinator {
+	if soviet == nil {
+		panic("soviet state cannot be nil")
+	}
+	return &SovietCoordinator{
+		soviet:    soviet,
+		validator: NewProtocolValidator(soviet),
+		repo:      repo,
+		sender:    sender,
+		events:    events,
+		logger:    logger,
 	}
 }
 
@@ -50,6 +78,40 @@ func (c *SovietCoordinator) RegisterAgent(agent *domain.AgentComrade) (bool, str
 	err := c.soviet.RegisterAgent(agent)
 	if err != nil {
 		return false, "", fmt.Errorf("failed to register agent: %w", err)
+	}
+
+	// Handle external operations if dependencies are available
+	if c.repo != nil {
+		if err := c.repo.Store(agent); err != nil {
+			// Try to rollback domain operation
+			c.soviet.UnregisterAgent(role)
+			if c.logger != nil {
+				c.logger.Error("Failed to persist agent", map[string]interface{}{
+					"role":  role,
+					"error": err.Error(),
+				})
+			}
+			return false, "", fmt.Errorf("failed to persist agent: %w", err)
+		}
+	}
+
+	if c.events != nil {
+		if err := c.events.PublishAgentRegistered(role, agent.Type()); err != nil {
+			if c.logger != nil {
+				c.logger.Error("Failed to publish agent registered event", map[string]interface{}{
+					"role":  role,
+					"error": err.Error(),
+				})
+			}
+			// Note: We don't rollback for event failures, just log
+		}
+	}
+
+	if c.logger != nil {
+		c.logger.Info("Agent registered successfully", map[string]interface{}{
+			"role":       role,
+			"agent_type": agent.Type(),
+		})
 	}
 
 	// Set the agent as connected and in waiting state initially
@@ -91,6 +153,36 @@ func (c *SovietCoordinator) DeregisterAgent(role string) error {
 		return fmt.Errorf("failed to deregister agent: %w", err)
 	}
 
+	// Handle external operations if dependencies are available
+	if c.repo != nil {
+		if err := c.repo.Delete(role); err != nil {
+			if c.logger != nil {
+				c.logger.Error("Failed to delete agent from persistence", map[string]interface{}{
+					"role":  role,
+					"error": err.Error(),
+				})
+			}
+			// Note: We don't rollback domain operation for persistence failures
+		}
+	}
+
+	if c.events != nil {
+		if err := c.events.PublishAgentDeregistered(role, "unregistered"); err != nil {
+			if c.logger != nil {
+				c.logger.Error("Failed to publish agent deregistered event", map[string]interface{}{
+					"role":  role,
+					"error": err.Error(),
+				})
+			}
+		}
+	}
+
+	if c.logger != nil {
+		c.logger.Info("Agent deregistered successfully", map[string]interface{}{
+			"role": role,
+		})
+	}
+
 	return nil
 }
 
@@ -111,11 +203,58 @@ func (c *SovietCoordinator) ProcessYield(message domain.YieldMessage) error {
 		sourceAgent.Yield() // This transitions the agent to waiting state
 	}
 
-	// Transfer the barrel
-	barrel := c.soviet.GetBarrel()
-	err := barrel.TransferTo(toRole, payload)
+	// Use SovietState to handle barrel transfer
+	err := c.soviet.ProcessBarrelTransfer(fromRole, toRole, payload)
 	if err != nil {
-		return fmt.Errorf("failed to transfer barrel: %w", err)
+		return err
+	}
+
+	// Handle external operations if dependencies are available
+
+	// Send deactivation to source agent (if not people)
+	if fromRole != "people" && c.sender != nil {
+		if err := c.sender.SendDeactivation(fromRole, "Barrel transferred"); err != nil {
+			if c.logger != nil {
+				c.logger.Error("Failed to send deactivation message", map[string]interface{}{
+					"role":  fromRole,
+					"error": err.Error(),
+				})
+			}
+		}
+	}
+
+	// Send activation to target agent (if not people)
+	if toRole != "people" && c.sender != nil {
+		if err := c.sender.SendActivation(toRole, payload); err != nil {
+			if c.logger != nil {
+				c.logger.Error("Failed to send activation message", map[string]interface{}{
+					"role":  toRole,
+					"error": err.Error(),
+				})
+			}
+		}
+	}
+
+	// Publish barrel transfer event
+	if c.events != nil {
+		if err := c.events.PublishBarrelTransferred(fromRole, toRole, payload); err != nil {
+			if c.logger != nil {
+				c.logger.Error("Failed to publish barrel transfer event", map[string]interface{}{
+					"from_role": fromRole,
+					"to_role":   toRole,
+					"error":     err.Error(),
+				})
+			}
+		}
+	}
+
+	// Log successful transfer
+	if c.logger != nil {
+		c.logger.Info("Barrel transferred successfully", map[string]interface{}{
+			"from_role": fromRole,
+			"to_role":   toRole,
+			"payload":   payload,
+		})
 	}
 
 	// If transferring to an agent, activate them

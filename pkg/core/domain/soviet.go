@@ -16,6 +16,7 @@ type SovietStats struct {
 }
 
 // SovietState represents the state of the collective, managing all agents and the barrel
+// It remains a pure domain object without external dependencies
 type SovietState struct {
 	agents        map[string]*AgentComrade
 	barrel        *BarrelOfGun
@@ -99,7 +100,8 @@ func (s *SovietState) UnregisterAgent(role string) error {
 		return fmt.Errorf("role cannot be empty")
 	}
 
-	if _, exists := s.agents[role]; !exists {
+	_, exists := s.agents[role]
+	if !exists {
 		return fmt.Errorf("agent with role '%s' is not registered", role)
 	}
 
@@ -150,6 +152,15 @@ func (s *SovietState) IsBarrelHeldBy(role string) bool {
 		return false
 	}
 	return s.barrel.IsHeldBy(role)
+}
+
+// ProcessBarrelTransfer handles barrel transfer
+func (s *SovietState) ProcessBarrelTransfer(fromRole, toRole, payload string) error {
+	if s.barrel == nil {
+		return fmt.Errorf("no barrel available for transfer")
+	}
+
+	return s.barrel.TransferTo(toRole, payload)
 }
 
 // GetStats returns statistics about the current soviet state
