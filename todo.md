@@ -1,161 +1,251 @@
 # Agent Farm - Revolutionary Multi-agent Control Protocol
-## System Architecture & Development Plan
+## Hexagonal Architecture Development Plan
 
-## System Architecture Overview
+## System Architecture Overview - Hexagonal Design
 
-### High-Level Revolutionary Architecture
+### Hexagonal Architecture Layout
 ```
-┌─────────────────────┐     ┌─────────────────────┐     ┌─────────────────────┐
-│  People's           │────▶│  Central Committee  │◀────│   Agent Comrades    │
-│  Representatives    │     │     (Soviet)        │     │   (TCP Clients)     │
-│  (cli)              │     │   (TCP Server)      │     │                     │
-└─────────────────────┘     └─────────────────────┘     └─────────────────────┘
+                        ┌──────────────### Hexagonal Architecture Patterns
+- **Domain-Driven Design**: Core business logic isolated in domain layer
+- **Dependency Inversion**: Core depends on abstractions, not implementations  
+- **Interface Segregation**: Small, focused interfaces for each concern
+- **Single Responsibility**: Each layer has one clear purpose
+
+### Revolutionary Domain Model Improvements
+- **AgentComrade State Model**: Refined from 3 states (waiting/working/yielding) to 2 meaningful states (waiting/working)
+- **Domain Operations**: Yield is now a proper domain method, not a persistent state
+- **Semantic Correctness**: States represent what agents *are*, operations represent what they *do*
+- **Test Coverage**: 100% test coverage with comprehensive TDD implementation──────────────────────┐
+                        │             ADAPTERS                    │
+                        │  ┌─────────────────┐ ┌─────────────────┐│
+                        │  │   TCP Server    │ │   CLI Handler   ││
+                        │  │   (Primary)     │ │   (Primary)     ││
+                        │  └─────────────────┘ └─────────────────┘│
+                        └─────────────┬───────────────────────────┘
                                       │
-                              ┌─────────────────┐
-                              │ Sacred          │
-                              │ Barrel of Gun   │
-                              │                 │
-                              └─────────────────┘
+                        ┌─────────────▼───────────────────────────┐
+                        │             PORTS                       │
+                        │  ┌─────────────────┐ ┌─────────────────┐│
+                        │  │  Soviet Service │ │  Agent Service  ││
+                        │  │  (Interface)    │ │  (Interface)    ││
+                        │  └─────────────────┘ └─────────────────┘│
+                        └─────────────┬───────────────────────────┘
+                                      │
+                        ┌─────────────▼───────────────────────────┐
+                        │              CORE                       │
+                        │  ┌─────────────────┐ ┌─────────────────┐│
+                        │  │ Barrel of Gun   │ │ Agent Registry  ││
+                        │  │ Domain Model    │ │ Domain Model    ││
+                        │  │                 │ │                 ││
+                        │  └─────────────────┘ └─────────────────┘│
+                        │  ┌─────────────────┐ ┌─────────────────┐│
+                        │  │ Soviet          │ │ Revolutionary   ││
+                        │  │ Coordinator     │ │ Protocol        ││
+                        │  │ (Domain Logic)  │ │ (Domain Logic)  ││
+                        │  └─────────────────┘ └─────────────────┘│
+                        └─────────────────────────────────────────┘
 ```
 
-### Revolutionary Components
+### Hexagonal Components
 
-1. **Central Committee (Soviet)**
-   - TCP server serving the People's will on configurable port (default: 53646)
-   - Sacred barrel of gun state manager
-   - Comrade connection/registration manager
-   - Revolutionary message router
-   - Protocol discipline enforcer
+**CORE DOMAIN (Center of Hexagon):**
+- **Domain Models**: Barrel of Gun, Agent Comrade, Message entities
+- **Domain Services**: Soviet Coordinator, Protocol Validator, Yield Manager
+- **Business Logic**: All revolutionary rules and coordination logic
 
-2. **Agent Comrade SDK (Library)**
-   - TCP client wrapper for collective communication
-   - Revolutionary protocol message formatter
-   - Disciplined waiting/activation state handler
-   - Yield functionality for barrel of gun transfer
+**PORTS (Interfaces):**
+- **Primary Ports**: SovietService (command interface), AgentService (query interface)
+- **Secondary Ports**: AgentRepository (persistence), EventPublisher (notifications)
 
-3. **Revolutionary Protocol Layer**
-   - JSON message definitions for the collective
-   - Message validation ensuring revolutionary discipline
-   - Error handling protecting against counter-revolutionary activities
+**ADAPTERS:**
+- **Primary Adapters**: TCP Server Handler, CLI Command Handler
+- **Secondary Adapters**: In-Memory Repository, Console Logger
 
-## Task Breakdown
+## Development Plan - Hexagonal Architecture Approach
+
+**HEXAGONAL PRINCIPLE: Build from the inside out**
+1. **CORE FIRST**: Implement domain models and business logic with zero external dependencies
+2. **PORTS SECOND**: Define clean interfaces for external communication
+3. **ADAPTERS LAST**: Implement TCP and CLI as interchangeable adapters
 
 **IMPORTANT NOTICE: This project MUST follow Test-Driven Development (TDD) principles. Write unit tests FIRST before implementing any code. Follow the Red-Green-Refactor cycle for all development tasks.**
 
 **REVOLUTIONARY DISCIPLINE: Complete ONE subtask at a time. After each subtask completion, present the work for comrade review before proceeding to the next subtask. No rushing through multiple tasks without proper collective oversight.**
 
-### Phase 1: Revolutionary Infrastructure (Foundation) ✅ COMPLETED
-- [x] **Task 1.1**: Collective setup and dependencies ✅
-  - Go module initialization for the Agent Farm ✅
-  - Revolutionary directory structure supporting multiple operational modes ✅
-  - Basic logging setup for the People's oversight ✅
-  - Configuration management serving collective needs ✅
+### Phase 1: CORE DOMAIN IMPLEMENTATION (Pure Business Logic) 🎯 CURRENT FOCUS
+**Goal: Implement the core domain without any external dependencies (no TCP, no JSON, no I/O)**
 
-- [x] **Task 1.2**: Revolutionary protocol message definitions ✅
-  - Define message structs (REGISTER, YIELD, ACTIVATE, etc.) for collective communication ✅
-  - JSON serialization/deserialization for the People's transparency ✅
-  - Message validation logic ensuring revolutionary discipline ✅
-  - Unit tests with testify assertions ✅
+- [x] **Task 1.1**: Core Domain Models (Pure Go structs) ✅ **COMPLETED**
+  - [x] BarrelOfGun entity with ownership tracking
+  - [x] AgentComrade entity with role, state, and capabilities (refactored: removed yielding state, added Activate/Yield methods)
+  - [x] RevolutionaryMessage entity for internal communication  
+  - [x] SovietState entity managing the collective state
+  - [x] Unit tests for all domain models (pure Go testing with Testify)
 
-### Phase 2: Central Committee Core (Revolutionary Brain)
-- [ ] **Task 2.1**: Design the agent struct and core logic
-  - Design Agent struct representing comrade state and capabilities
-  - Implement sacred barrel of gun state management in memory
-  - Implement blocking/yielding logic without network dependencies
-  - Create mock interfaces for testing core Soviet protocol logic
-  - Unit tests for barrel transfer and agent state transitions
-- [ ] **Task 2.2**: Agent Comrade registration system
-  - Registration message handling for collective enrollment
-  - Role-to-connection mapping for revolutionary accountability
-  - Connection lifecycle management ensuring collective stability
-  - **Reconnection recovery**: Detect when disconnected barrel holder reconnects and auto-activate
+- [ ] **Task 1.2**: Core Business Logic - Soviet Coordinator Service
+  - SovietCoordinator struct implementing all barrel management logic
+  - Agent registration/deregistration logic (in-memory)
+  - Barrel yield validation and transfer logic
+  - Agent state transition logic (waiting -> working -> yielding)
+  - Unit tests for all business rules (mocked dependencies)
 
-- [ ] **Task 2.3**: YIELD request processing for collective coordination
-  - YIELD message validation according to revolutionary principles
-  - Barrel of gun transfer logic serving the People's will
-  - ACTIVATE message sending to designated comrades
+- [ ] **Task 1.3**: Core Business Logic - Protocol Validation
+  - ProtocolValidator service for revolutionary discipline enforcement
+  - Message validation rules (independent of transport format)
+  - Revolutionary rule enforcement (only barrel holder can yield)
+  - State consistency validation logic
+  - Unit tests for protocol validation rules
 
-- [ ] **Task 2.4**: Status query handling for People's transparency
-  - Agent list generation serving the People's information needs
-  - Response formatting ensuring revolutionary clarity
+- [ ] **Task 1.4**: Core Business Logic - Yield Management
+  - YieldManager service handling barrel transfers
+  - Target validation (agent exists, can receive barrel)
+  - Yield workflow orchestration (validate -> transfer -> notify)
+  - Reconnection recovery logic for disconnected barrel holders
+  - Unit tests for yield scenarios and edge cases
 
-### Phase 3: TCP Network Integration (Revolutionary Communication)
-- [ ] **Task 3.1**: TCP server infrastructure for Central Committee
-  - TCP listener setup serving the collective on configurable port (default: 53646)
-  - Comrade connection management with real TCP sockets
-  - Integration of core Soviet logic with TCP message handling
-  - Connection lifecycle management ensuring collective stability
+### Phase 2: PORTS DEFINITION (Clean Interfaces) 
+**Goal: Define interfaces that the core needs to interact with the outside world**
 
-### Phase 4: Agent Comrade SDK (Revolutionary Tools)
-- [ ] **Task 4.1**: TCP client wrapper for collective communication
-  - Connection establishment to Central Committee
-  - Reconnection logic ensuring revolutionary resilience
-  - Connection state management for disciplined operation
+- [ ] **Task 2.1**: Primary Ports (Driving the application)
+  - SovietService interface (commands: RegisterAgent, ProcessYield, QueryStatus)
+  - AgentService interface (queries: GetAgentState, GetBarrelStatus)
+  - CommandHandler interface (abstraction for different input sources)
 
-- [ ] **Task 4.2**: Agent Comrade lifecycle management
-  - Registration process for collective enrollment
-  - Disciplined waiting state for orders
-  - Message listening loop serving revolutionary communication
+- [ ] **Task 2.2**: Secondary Ports (Driven by the application)  
+  - AgentRepository interface (persistence abstraction)
+  - MessageSender interface (communication abstraction)
+  - EventPublisher interface (notification abstraction)
+  - Logger interface (logging abstraction)
 
-- [ ] **Task 4.3**: Yield functionality for collective coordination
-  - yield() function implementation for barrel of gun transfer
-  - Message formatting and sending to Central Committee
-  - Error handling protecting revolutionary operations
+### Phase 3: TCP ADAPTER IMPLEMENTATION (Network Transport)
+**Goal: Implement TCP as one possible adapter, easily replaceable**
 
-- [ ] **Task 4.4**: Agent Comrade activation handling
-  - ACTIVATE message processing from Central Committee
-  - State transition from waiting to productive labor
-  - Callback mechanism for revolutionary work execution
+- [ ] **Task 3.1**: TCP Primary Adapter (Server)
+  - TCPSovietAdapter implementing CommandHandler interface
+  - JSON message serialization/deserialization
+  - TCP connection management and message routing
+  - Integration with SovietService port
 
-### Phase 5: People's Interface Support
-- [ ] **Task 5.1**: Command-line interface for People's representatives
-  - CLI argument parsing for People's commands
-  - Direct YIELD operations from command line
-  - Interactive mode for continuous People's guidance
-  - Integration with TCP client for Soviet communication
+- [ ] **Task 3.2**: TCP Secondary Adapter (Client Communication)
+  - TCPMessageSender implementing MessageSender interface
+  - Connection lifecycle management
+  - Error handling and reconnection logic
+  - Message delivery confirmation
 
-- [ ] **Task 5.2**: People's representative message handling
-  - Direct socket connection support for revolutionary guidance
-  - YIELD from "people" role ensuring supreme authority
-  - Revolutionary error handling and feedback
+### Phase 4: CLI ADAPTER IMPLEMENTATION (Human Interface)
+**Goal: Implement CLI as another adapter for People's representatives**
 
-### Phase 6: Revolutionary Testing & Examples
-- [ ] **Task 6.1**: Unit tests for collective validation
-  - Revolutionary protocol message tests (✅ completed)
-  - Sacred barrel of gun state management tests
-  - Comrade connection handling tests
+- [ ] **Task 4.1**: CLI Primary Adapter
+  - CLICommandHandler implementing CommandHandler interface
+  - Interactive command parsing and validation
+  - Human-readable output formatting
+  - Integration with SovietService port
 
-- [ ] **Task 6.2**: Integration tests for collective coordination
-  - End-to-end revolutionary workflow tests
-  - Multi-agent comrade scenario tests
-  - People's intervention tests ensuring supreme authority
+- [ ] **Task 4.2**: CLI Secondary Adapter
+  - ConsoleSender implementing MessageSender interface
+  - Formatted output for human consumption
+  - Status display and monitoring capabilities
 
-- [ ] **Task 6.3**: Example agent comrades
-  - Simple "developer" comrade example for the collective
-  - Simple "tester" comrade example ensuring quality
-  - Example revolutionary workflow documentation
+### Phase 5: INFRASTRUCTURE ADAPTERS (Supporting Services)
+**Goal: Implement infrastructure concerns as pluggable adapters**
 
-### Phase 7: Revolutionary Documentation & Collective Tooling
-- [ ] **Task 7.1**: API documentation for the collective
-  - Agent Comrade SDK documentation serving revolutionary development
-  - Protocol specification ensuring collective understanding
-  - Usage examples for the People's benefit
+- [ ] **Task 5.1**: Repository Adapters
+  - InMemoryAgentRepository implementing AgentRepository interface
+  - (Future: FileRepository, DatabaseRepository)
 
-- [ ] **Task 7.2**: Deployment tooling for the collective
-  - Configuration templates serving revolutionary needs
-  - Startup scripts for collective coordination
-  - Monitoring utilities ensuring People's oversight
+- [ ] **Task 5.2**: Logging Adapters  
+  - ConsoleLogger implementing Logger interface
+  - (Future: FileLogger, StructuredLogger)
+
+### Phase 6: INTEGRATION & ASSEMBLY (Dependency Injection)
+**Goal: Wire everything together with clean dependency injection**
+
+- [ ] **Task 6.1**: Application Assembly
+  - Dependency injection container/factory
+  - Adapter configuration and wiring
+  - Application startup coordination
+
+- [ ] **Task 6.2**: Integration Testing
+  - End-to-end tests with real adapters
+  - TCP + Core integration tests
+  - CLI + Core integration tests
+  - Cross-adapter compatibility tests
+
+## Directory Structure (Hexagonal Layout)
+
+```
+agent_farm/
+├── cmd/                          # Application entry points
+│   ├── soviet/                   # Central Committee executable
+│   └── agent/                    # Agent Comrade executable
+├── pkg/
+│   ├── core/                     # DOMAIN CORE (no external dependencies)
+│   │   ├── domain/               # Domain models and entities
+│   │   │   ├── barrel.go         # BarrelOfGun entity
+│   │   │   ├── agent.go          # AgentComrade entity  
+│   │   │   ├── message.go        # RevolutionaryMessage entity
+│   │   │   └── soviet.go         # SovietState entity
+│   │   ├── services/             # Domain services (business logic)
+│   │   │   ├── coordinator.go    # SovietCoordinator service
+│   │   │   ├── validator.go      # ProtocolValidator service
+│   │   │   └── yield_manager.go  # YieldManager service
+│   │   └── errors/               # Domain-specific errors
+│   ├── ports/                    # PORTS (interfaces)
+│   │   ├── primary/              # Primary ports (driving)
+│   │   │   ├── soviet_service.go # SovietService interface
+│   │   │   └── agent_service.go  # AgentService interface  
+│   │   └── secondary/            # Secondary ports (driven)
+│   │       ├── repository.go     # AgentRepository interface
+│   │       ├── sender.go         # MessageSender interface
+│   │       └── logger.go         # Logger interface
+│   └── adapters/                 # ADAPTERS (implementations)
+│       ├── primary/              # Primary adapters
+│       │   ├── tcp/              # TCP server adapter
+│       │   └── cli/              # CLI command adapter
+│       └── secondary/            # Secondary adapters
+│           ├── memory/           # In-memory repository
+│           ├── tcp/              # TCP client sender
+│           └── console/          # Console logger
+├── internal/                     # Internal utilities and helpers
+└── test/                         # Integration tests
+```
+
+## Development Workflow (Red-Green-Refactor)
+
+For each task:
+1. **RED**: Write failing unit tests first
+2. **GREEN**: Write minimal code to make tests pass  
+3. **REFACTOR**: Clean up code while keeping tests green
+4. **REVIEW**: Present work for collective approval
+5. **NEXT**: Move to next task only after approval
+
+## Benefits of This Hexagonal Approach
+
+1. **Testability**: Core domain logic can be tested in isolation
+2. **Flexibility**: TCP can be replaced with HTTP, gRPC, or any other transport
+3. **Independence**: Business logic doesn't depend on frameworks or infrastructure
+4. **Maintainability**: Clear separation of concerns and responsibilities
+5. **Revolutionary Discipline**: Each layer has a single, well-defined purpose
 
 ## Revolutionary Technical Principles & Collective Decisions
 
 ### Programming Language: Go (For the People)
-- **Rationale**: Excellent TCP/networking support serving collective communication, good concurrency primitives for revolutionary coordination, easy deployment for the masses
-- **Benefits**: Single binary deployment for the collective, good performance serving the People, excellent standard library supporting revolutionary development
+- **Rationale**: Excellent TCP/networking support, good concurrency primitives, easy deployment
+- **Benefits**: Single binary deployment, good performance, excellent standard library
 
-### Revolutionary Architecture Patterns
-- **State Machine**: Central Committee manages sacred token state transitions
-- **Event-Driven**: Message-based communication ensuring collective coordination
-- **Client-Server**: Clear separation between Central Committee and Agent Comrades
+### Testing Framework: Testify (For Revolutionary Quality)
+- **Test Assertions**: Use `github.com/stretchr/testify/assert` for all test assertions
+- **Test Suites**: Use `github.com/stretchr/testify/suite` for complex test scenarios
+- **Mocking**: Use `github.com/stretchr/testify/mock` for dependency mocking in unit tests
+- **Benefits**: Readable test code, comprehensive assertion library, excellent mocking capabilities
+
+### Hexagonal Architecture Patterns
+- **Domain-Driven Design**: Core business logic isolated in domain layer
+- **Dependency Inversion**: Core depends on abstractions, not implementations  
+- **Interface Segregation**: Small, focused interfaces for each concern
+- **Single Responsibility**: Each layer has one clear purpose
+
+**NEXT STEP**: Complete Task 1.1 by implementing SovietState entity, then proceed to Task 1.2 - Core Business Logic (Soviet Coordinator Service). We continue building the revolutionary system from the heart outward, following strict hexagonal principles!
 
 ### Protocol Design for the Collective
 - **JSON over TCP**: Human-readable for People's transparency, easy to debug for collective maintenance, tooling-friendly for revolutionary development
