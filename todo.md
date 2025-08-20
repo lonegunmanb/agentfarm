@@ -55,7 +55,7 @@
 
 **PORTS (Interfaces):**
 - **Primary Ports**: SovietService (command interface), AgentService (query interface)
-- **Secondary Ports**: AgentRepository (persistence), EventPublisher (notifications)
+- **Secondary Ports**: AgentRepository (persistence), MessageSender (communication), Logger (monitoring)
 
 **ADAPTERS:**
 - **Primary Adapters**: TCP Server Handler, CLI Command Handler
@@ -135,7 +135,6 @@
 - [x] **Task 3.1**: Mock Implementations ✅ **COMPLETED**
   - [x] MockAgentRepository implementing AgentRepository interface with controllable responses
   - [x] MockMessageSender implementing MessageSender interface with message capture
-  - [x] MockEventPublisher implementing EventPublisher interface with event logging
   - [x] MockLogger implementing Logger interface with output capture
   - [x] Comprehensive test coverage ensuring interface compliance
   - [x] Proper dependency injection architecture with hexagonal separation
@@ -145,7 +144,7 @@
   - [x] Agent registration -> barrel assignment -> yield -> transfer cycle testing
   - [x] People's intervention and status query testing with mocks
   - [x] Disconnection/reconnection recovery testing with mock failure simulation
-  - [x] All external operations (persistence, messaging, events, logging) properly tested
+  - [x] All external operations (persistence, messaging, logging) properly tested
 
 - [x] **Task 3.3**: Interface Design Validation ✅ **COMPLETED**
   - [x] Verified interfaces are sufficient for all use cases

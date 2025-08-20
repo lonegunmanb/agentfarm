@@ -16,7 +16,6 @@ type SovietCoordinator struct {
 	// External dependencies for side effects
 	repo   ports.AgentRepository
 	sender ports.MessageSender
-	events ports.EventPublisher
 	logger ports.Logger
 }
 
@@ -36,7 +35,6 @@ func NewSovietCoordinatorWithDependencies(
 	soviet *domain.SovietState,
 	repo ports.AgentRepository,
 	sender ports.MessageSender,
-	events ports.EventPublisher,
 	logger ports.Logger,
 ) *SovietCoordinator {
 	if soviet == nil {
@@ -47,7 +45,6 @@ func NewSovietCoordinatorWithDependencies(
 		validator: NewProtocolValidator(soviet),
 		repo:      repo,
 		sender:    sender,
-		events:    events,
 		logger:    logger,
 	}
 }
@@ -92,18 +89,6 @@ func (c *SovietCoordinator) RegisterAgent(agent *domain.AgentComrade) (bool, str
 				})
 			}
 			return false, "", fmt.Errorf("failed to persist agent: %w", err)
-		}
-	}
-
-	if c.events != nil {
-		if err := c.events.PublishAgentRegistered(role, agent.Type()); err != nil {
-			if c.logger != nil {
-				c.logger.Error("Failed to publish agent registered event", map[string]interface{}{
-					"role":  role,
-					"error": err.Error(),
-				})
-			}
-			// Note: We don't rollback for event failures, just log
 		}
 	}
 
@@ -166,17 +151,6 @@ func (c *SovietCoordinator) DeregisterAgent(role string) error {
 		}
 	}
 
-	if c.events != nil {
-		if err := c.events.PublishAgentDeregistered(role, "unregistered"); err != nil {
-			if c.logger != nil {
-				c.logger.Error("Failed to publish agent deregistered event", map[string]interface{}{
-					"role":  role,
-					"error": err.Error(),
-				})
-			}
-		}
-	}
-
 	if c.logger != nil {
 		c.logger.Info("Agent deregistered successfully", map[string]interface{}{
 			"role": role,
@@ -230,19 +204,6 @@ func (c *SovietCoordinator) ProcessYield(message domain.YieldMessage) error {
 				c.logger.Error("Failed to send activation message", map[string]interface{}{
 					"role":  toRole,
 					"error": err.Error(),
-				})
-			}
-		}
-	}
-
-	// Publish barrel transfer event
-	if c.events != nil {
-		if err := c.events.PublishBarrelTransferred(fromRole, toRole, payload); err != nil {
-			if c.logger != nil {
-				c.logger.Error("Failed to publish barrel transfer event", map[string]interface{}{
-					"from_role": fromRole,
-					"to_role":   toRole,
-					"error":     err.Error(),
 				})
 			}
 		}

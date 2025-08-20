@@ -18,7 +18,6 @@ type WorkflowIntegrationTestSuite struct {
 	sovietService *CoordinatorAdapter
 	mockRepo      *MockAgentRepository
 	mockSender    *MockMessageSender
-	mockEvents    *MockEventPublisher
 	mockLogger    *MockLogger
 }
 
@@ -27,12 +26,11 @@ func (suite *WorkflowIntegrationTestSuite) SetupTest() {
 	// Create mock implementations
 	suite.mockRepo = NewMockAgentRepository()
 	suite.mockSender = NewMockMessageSender()
-	suite.mockEvents = NewMockEventPublisher()
 	suite.mockLogger = NewMockLogger()
 
 	// Create pure domain objects
 	suite.soviet = domain.NewSovietState()
-	
+
 	// Initialize barrel (required for tests)
 	barrel := domain.NewBarrelOfGun()
 	err := suite.soviet.SetBarrel(barrel)
@@ -45,7 +43,6 @@ func (suite *WorkflowIntegrationTestSuite) SetupTest() {
 		suite.soviet,
 		suite.mockRepo,
 		suite.mockSender,
-		suite.mockEvents,
 		suite.mockLogger,
 	)
 	suite.sovietService = NewCoordinatorAdapter(suite.coordinator, suite.soviet)
@@ -224,21 +221,6 @@ func (suite *WorkflowIntegrationTestSuite) TestMockVerificationAndAssertion() {
 		}
 	}
 	assert.True(suite.T(), activationFound, "Activation message should be sent automatically")
-
-	// Event publisher verification - events should be published automatically
-	publishedEvents := suite.mockEvents.GetPublishedEvents()
-	assert.GreaterOrEqual(suite.T(), len(publishedEvents), 1)
-
-	// Find registration event
-	var registrationFound bool
-	for _, event := range publishedEvents {
-		if event.Type == "agent_registered" {
-			registrationFound = true
-			assert.Equal(suite.T(), "developer", event.Data["role"])
-			break
-		}
-	}
-	assert.True(suite.T(), registrationFound, "Registration event should be published automatically")
 
 	// Logger verification - logs should be created automatically
 	logs := suite.mockLogger.GetLogs()

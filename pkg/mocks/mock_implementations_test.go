@@ -64,22 +64,6 @@ func (suite *MockImplementationsTestSuite) TestMockMessageSender_SendAndCapture(
 	assert.Equal(suite.T(), "Start working on authentication module", messages[0].Payload)
 }
 
-// TestMockEventPublisher_PublishAndCapture tests event publishing functionality
-func (suite *MockImplementationsTestSuite) TestMockEventPublisher_PublishAndCapture() {
-	// RED: This test will fail until we implement MockEventPublisher
-	publisher := NewMockEventPublisher()
-
-	// Publish test event
-	err := publisher.PublishAgentRegistered("developer", "code-agent")
-	assert.NoError(suite.T(), err)
-
-	// Verify event was captured
-	events := publisher.GetPublishedEvents()
-	assert.Len(suite.T(), events, 1)
-	assert.Equal(suite.T(), "agent_registered", events[0].Type)
-	assert.Equal(suite.T(), "developer", events[0].Data["role"])
-}
-
 // TestMockLogger_LogAndCapture tests logging functionality
 func (suite *MockImplementationsTestSuite) TestMockLogger_LogAndCapture() {
 	// RED: This test will fail until we implement MockLogger
