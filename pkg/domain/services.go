@@ -57,3 +57,11 @@ type StatusResponse struct {
 	// ConnectedAgents indicates which agents are currently connected
 	ConnectedAgents map[string]bool `json:"connected_agents"`
 }
+
+// CommandHandler defines the port for handling incoming commands from external sources
+// This interface represents how external adapters (TCP, CLI, etc.) send commands to the system
+type CommandHandler interface {
+	// HandleCommand processes an incoming command message
+	// Returns a response message or error
+	HandleCommand(command map[string]interface{}) (map[string]interface{}, error)
+}
