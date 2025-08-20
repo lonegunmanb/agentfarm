@@ -107,66 +107,92 @@
 ### Phase 2: PORTS DEFINITION (Clean Interfaces) 
 **Goal: Define interfaces that the core needs to interact with the outside world**
 
-- [ ] **Task 2.1**: Primary Ports (Driving the application)
-  - SovietService interface (commands: RegisterAgent, ProcessYield, QueryStatus)
-  - AgentService interface (queries: GetAgentState, GetBarrelStatus)
-  - CommandHandler interface (abstraction for different input sources)
+- [x] **Task 2.1**: Primary Ports (Driving the application) ✅ **COMPLETED**
+  - [x] SovietService interface (commands: RegisterAgent, ProcessYield, DeregisterAgent, HandleReconnection, QueryStatus)
+  - [x] AgentService interface (queries: GetAgentState, GetBarrelStatus, GetRegisteredAgents)
+  - [x] StatusResponse struct for comprehensive system status reporting
+  - [x] Complete test coverage with interface compliance tests
+  - [x] Integration tests with CoordinatorAdapter proving interface design works
+  - [x] Full workflow validation through ports demonstrating proper separation
 
-- [ ] **Task 2.2**: Secondary Ports (Driven by the application)  
-  - AgentRepository interface (persistence abstraction)
-  - MessageSender interface (communication abstraction)
-  - EventPublisher interface (notification abstraction)
-  - Logger interface (logging abstraction)
+- [ ] **Task 2.2**: Secondary Ports (Driven by the application) **SKIPPED**
+  - **DECISION**: No secondary ports needed currently - core domain has no external dependencies
+  - Current implementation uses in-memory storage with zero external dependencies
+  - Will add secondary ports (AgentRepository, MessageSender, etc.) only when actually needed
+  - Following YAGNI principle - avoiding over-engineering interfaces we don't use yet
 
-### Phase 3: TCP ADAPTER IMPLEMENTATION (Network Transport)
+### Phase 3: MOCK WORKFLOW TESTING (Interface Validation)
+**Goal: Validate interface design with mock implementations and end-to-end workflow testing**
+
+- [ ] **Task 3.1**: Mock Implementations
+  - MockAgentRepository implementing AgentRepository interface with controllable responses
+  - MockMessageSender implementing MessageSender interface with message capture
+  - MockEventPublisher implementing EventPublisher interface with event logging
+  - MockLogger implementing Logger interface with output capture
+
+- [ ] **Task 3.2**: Workflow Integration Tests
+  - Complete revolutionary workflow test using mocked dependencies
+  - Agent registration -> barrel assignment -> yield -> transfer cycle testing
+  - People's intervention and status query testing with mocks
+  - Disconnection/reconnection recovery testing with mock failure simulation
+
+- [ ] **Task 3.3**: Interface Design Validation
+  - Verify interfaces are sufficient for all use cases
+  - Identify missing methods or parameters in interfaces
+  - Refine interface contracts based on workflow testing results
+  - Ensure proper separation of concerns between ports
+
+### Phase 4: TCP ADAPTER IMPLEMENTATION (Network Transport)
+### Phase 4: TCP ADAPTER IMPLEMENTATION (Network Transport)
 **Goal: Implement TCP as one possible adapter, easily replaceable**
 
-- [ ] **Task 3.1**: TCP Primary Adapter (Server)
+- [ ] **Task 4.1**: TCP Primary Adapter (Server)
   - TCPSovietAdapter implementing CommandHandler interface
   - JSON message serialization/deserialization
   - TCP connection management and message routing
   - Integration with SovietService port
 
-- [ ] **Task 3.2**: TCP Secondary Adapter (Client Communication)
+- [ ] **Task 4.2**: TCP Secondary Adapter (Client Communication)
   - TCPMessageSender implementing MessageSender interface
   - Connection lifecycle management
   - Error handling and reconnection logic
   - Message delivery confirmation
 
-### Phase 4: CLI ADAPTER IMPLEMENTATION (Human Interface)
+### Phase 5: CLI ADAPTER IMPLEMENTATION (Human Interface)
 **Goal: Implement CLI as another adapter for People's representatives**
 
-- [ ] **Task 4.1**: CLI Primary Adapter
+- [ ] **Task 5.1**: CLI Primary Adapter
   - CLICommandHandler implementing CommandHandler interface
   - Interactive command parsing and validation
   - Human-readable output formatting
   - Integration with SovietService port
 
-- [ ] **Task 4.2**: CLI Secondary Adapter
+- [ ] **Task 5.2**: CLI Secondary Adapter
   - ConsoleSender implementing MessageSender interface
   - Formatted output for human consumption
   - Status display and monitoring capabilities
 
-### Phase 5: INFRASTRUCTURE ADAPTERS (Supporting Services)
+### Phase 6: INFRASTRUCTURE ADAPTERS (Supporting Services)
 **Goal: Implement infrastructure concerns as pluggable adapters**
 
-- [ ] **Task 5.1**: Repository Adapters
+- [ ] **Task 6.1**: Repository Adapters
   - InMemoryAgentRepository implementing AgentRepository interface
   - (Future: FileRepository, DatabaseRepository)
 
-- [ ] **Task 5.2**: Logging Adapters  
+- [ ] **Task 6.2**: Logging Adapters  
   - ConsoleLogger implementing Logger interface
   - (Future: FileLogger, StructuredLogger)
 
-### Phase 6: INTEGRATION & ASSEMBLY (Dependency Injection)
+### Phase 7: INTEGRATION & ASSEMBLY (Dependency Injection)
+### Phase 7: INTEGRATION & ASSEMBLY (Dependency Injection)
 **Goal: Wire everything together with clean dependency injection**
 
-- [ ] **Task 6.1**: Application Assembly
+- [ ] **Task 7.1**: Application Assembly
   - Dependency injection container/factory
   - Adapter configuration and wiring
   - Application startup coordination
 
-- [ ] **Task 6.2**: Integration Testing
+- [ ] **Task 7.2**: Integration Testing
   - End-to-end tests with real adapters
   - TCP + Core integration tests
   - CLI + Core integration tests
