@@ -1,4 +1,4 @@
-package ports
+package domain
 
 // MessageSender defines the port for sending messages to external agents
 // This interface abstracts message delivery operations from the core domain

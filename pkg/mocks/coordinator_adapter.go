@@ -1,70 +1,41 @@
 package mocks
 
 import (
-	"github.com/lonegunmanb/agentfarm/pkg/core/domain"
-	"github.com/lonegunmanb/agentfarm/pkg/core/services"
-	"github.com/lonegunmanb/agentfarm/pkg/ports"
+	"github.com/lonegunmanb/agentfarm/pkg/domain"
 )
 
-// CoordinatorAdapter adapts SovietCoordinator to implement SovietService interface
-// This adapter demonstrates how the coordinator would be used through the ports interface
+// CoordinatorAdapter adapts SovietState to implement SovietService interface
+// This adapter demonstrates how the soviet state would be used through the ports interface
 type CoordinatorAdapter struct {
-	coordinator *services.SovietCoordinator
-	soviet      *domain.SovietState
+	soviet *domain.SovietState
 }
 
-// NewCoordinatorAdapter creates a new adapter wrapping the coordinator
-func NewCoordinatorAdapter(coordinator *services.SovietCoordinator, soviet *domain.SovietState) *CoordinatorAdapter {
+// NewCoordinatorAdapter creates a new adapter wrapping the soviet state
+func NewCoordinatorAdapter(soviet *domain.SovietState) *CoordinatorAdapter {
 	return &CoordinatorAdapter{
-		coordinator: coordinator,
-		soviet:      soviet,
+		soviet: soviet,
 	}
 }
 
 // RegisterAgent implements SovietService.RegisterAgent
 func (a *CoordinatorAdapter) RegisterAgent(agent *domain.AgentComrade) (bool, string, error) {
-	return a.coordinator.RegisterAgent(agent)
+	return a.soviet.RegisterAgent(agent)
 }
 
 // ProcessYield implements SovietService.ProcessYield
 func (a *CoordinatorAdapter) ProcessYield(message domain.YieldMessage) error {
-	return a.coordinator.ProcessYield(message)
+	return a.soviet.ProcessYield(message)
 }
 
 // DeregisterAgent implements SovietService.DeregisterAgent
 func (a *CoordinatorAdapter) DeregisterAgent(role string) error {
-	return a.coordinator.DeregisterAgent(role)
+	return a.soviet.DeregisterAgent(role)
 }
 
 // QueryStatus implements SovietService.QueryStatus
-func (a *CoordinatorAdapter) QueryStatus() ports.StatusResponse {
-	barrelHolder := a.coordinator.GetBarrelStatus()
-	registeredAgents := a.coordinator.GetRegisteredAgents()
-	
-	// Build agent states map
-	agentStates := make(map[string]domain.AgentState)
-	connectedAgents := make(map[string]bool)
-	
-	for _, role := range registeredAgents {
-		state, err := a.coordinator.GetAgentState(role)
-		if err == nil {
-			agentStates[role] = state
-		}
-		
-		// Check if agent is connected
-		agent := a.soviet.GetAgent(role)
-		if agent != nil {
-			connectedAgents[role] = agent.IsConnected()
-		}
-	}
-	
-	return ports.StatusResponse{
-		BarrelHolder:     barrelHolder,
-		RegisteredAgents: registeredAgents,
-		AgentStates:      agentStates,
-		ConnectedAgents:  connectedAgents,
-	}
+func (a *CoordinatorAdapter) QueryStatus() domain.StatusResponse {
+	return a.soviet.QueryStatus()
 }
 
 // Verify interface compliance
-var _ ports.SovietService = (*CoordinatorAdapter)(nil)
+var _ domain.SovietService = (*CoordinatorAdapter)(nil)

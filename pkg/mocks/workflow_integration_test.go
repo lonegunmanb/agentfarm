@@ -4,8 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/lonegunmanb/agentfarm/pkg/core/domain"
-	"github.com/lonegunmanb/agentfarm/pkg/core/services"
+	"github.com/lonegunmanb/agentfarm/pkg/domain"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 )
@@ -14,7 +13,6 @@ import (
 type WorkflowIntegrationTestSuite struct {
 	suite.Suite
 	soviet        *domain.SovietState
-	coordinator   *services.SovietCoordinator
 	sovietService *CoordinatorAdapter
 	mockRepo      *MockAgentRepository
 	mockSender    *MockMessageSender
@@ -28,8 +26,12 @@ func (suite *WorkflowIntegrationTestSuite) SetupTest() {
 	suite.mockSender = NewMockMessageSender()
 	suite.mockLogger = NewMockLogger()
 
-	// Create pure domain objects
-	suite.soviet = domain.NewSovietState()
+	// Create soviet state with dependencies injected
+	suite.soviet = domain.NewSovietStateWithDependencies(
+		suite.mockRepo,
+		suite.mockSender,
+		suite.mockLogger,
+	)
 
 	// Initialize barrel (required for tests)
 	barrel := domain.NewBarrelOfGun()
@@ -38,14 +40,7 @@ func (suite *WorkflowIntegrationTestSuite) SetupTest() {
 		panic(fmt.Sprintf("Failed to set barrel: %v", err))
 	}
 
-	// Create coordinator with dependencies injected
-	suite.coordinator = services.NewSovietCoordinatorWithDependencies(
-		suite.soviet,
-		suite.mockRepo,
-		suite.mockSender,
-		suite.mockLogger,
-	)
-	suite.sovietService = NewCoordinatorAdapter(suite.coordinator, suite.soviet)
+	suite.sovietService = NewCoordinatorAdapter(suite.soviet)
 }
 
 // TestWorkflowIntegrationTests runs all workflow integration tests
@@ -69,7 +64,7 @@ func (suite *WorkflowIntegrationTestSuite) TestCompleteRevolutionaryWorkflow() {
 	assert.NoError(suite.T(), err)
 
 	// Verify developer is now working
-	developerState, err := suite.coordinator.GetAgentState("developer")
+	developerState, err := suite.soviet.GetAgentState("developer")
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), domain.AgentStateWorking, developerState)
 
@@ -87,11 +82,11 @@ func (suite *WorkflowIntegrationTestSuite) TestCompleteRevolutionaryWorkflow() {
 	assert.NoError(suite.T(), err)
 
 	// Verify states
-	developerState, err = suite.coordinator.GetAgentState("developer")
+	developerState, err = suite.soviet.GetAgentState("developer")
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), domain.AgentStateWaiting, developerState)
 
-	testerState, err := suite.coordinator.GetAgentState("tester")
+	testerState, err := suite.soviet.GetAgentState("tester")
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), domain.AgentStateWorking, testerState)
 
@@ -101,10 +96,10 @@ func (suite *WorkflowIntegrationTestSuite) TestCompleteRevolutionaryWorkflow() {
 	assert.NoError(suite.T(), err)
 
 	// Verify final state
-	barrelHolder := suite.coordinator.GetBarrelStatus()
+	barrelHolder := suite.soviet.GetBarrelStatus()
 	assert.Equal(suite.T(), "people", barrelHolder)
 
-	testerState, err = suite.coordinator.GetAgentState("tester")
+	testerState, err = suite.soviet.GetAgentState("tester")
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), domain.AgentStateWaiting, testerState)
 }
@@ -142,10 +137,10 @@ func (suite *WorkflowIntegrationTestSuite) TestPeoplesInterventionAndStatusQuery
 	assert.NoError(suite.T(), err)
 
 	// Verify intervention succeeded
-	barrelHolder := suite.coordinator.GetBarrelStatus()
+	barrelHolder := suite.soviet.GetBarrelStatus()
 	assert.Equal(suite.T(), "people", barrelHolder)
 
-	developerState, err := suite.coordinator.GetAgentState("developer")
+	developerState, err := suite.soviet.GetAgentState("developer")
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), domain.AgentStateWaiting, developerState)
 }
@@ -164,7 +159,7 @@ func (suite *WorkflowIntegrationTestSuite) TestDisconnectionRecoveryWithMocks() 
 	assert.NoError(suite.T(), err)
 
 	// Verify developer is working
-	developerState, err := suite.coordinator.GetAgentState("developer")
+	developerState, err := suite.soviet.GetAgentState("developer")
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), domain.AgentStateWorking, developerState)
 
@@ -177,12 +172,12 @@ func (suite *WorkflowIntegrationTestSuite) TestDisconnectionRecoveryWithMocks() 
 	assert.Equal(suite.T(), "Work on critical feature", lastMessage)
 
 	// Verify developer resumed working state
-	developerState, err = suite.coordinator.GetAgentState("developer")
+	developerState, err = suite.soviet.GetAgentState("developer")
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), domain.AgentStateWorking, developerState)
 
 	// Verify barrel status
-	barrelHolder := suite.coordinator.GetBarrelStatus()
+	barrelHolder := suite.soviet.GetBarrelStatus()
 	assert.Equal(suite.T(), "developer", barrelHolder)
 }
 

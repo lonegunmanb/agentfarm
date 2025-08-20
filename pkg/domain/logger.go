@@ -1,4 +1,4 @@
-package ports
+package domain
 
 // Logger defines the port for logging operations
 // This interface abstracts logging operations from the core domain

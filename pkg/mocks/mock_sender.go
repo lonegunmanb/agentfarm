@@ -3,19 +3,19 @@ package mocks
 import (
 	"sync"
 
-	"github.com/lonegunmanb/agentfarm/pkg/ports"
+	"github.com/lonegunmanb/agentfarm/pkg/domain"
 )
 
 // MockMessageSender implements MessageSender interface for testing
 type MockMessageSender struct {
 	mu       sync.RWMutex
-	messages []ports.SentMessage
+	messages []domain.SentMessage
 }
 
 // NewMockMessageSender creates a new mock message sender
 func NewMockMessageSender() *MockMessageSender {
 	return &MockMessageSender{
-		messages: make([]ports.SentMessage, 0),
+		messages: make([]domain.SentMessage, 0),
 	}
 }
 
@@ -24,7 +24,7 @@ func (m *MockMessageSender) SendActivation(role string, payload string) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	message := ports.SentMessage{
+	message := domain.SentMessage{
 		Recipient: role,
 		Type:      "activation",
 		Payload:   payload,
@@ -38,11 +38,11 @@ func (m *MockMessageSender) SendActivation(role string, payload string) error {
 }
 
 // GetSentMessages returns all sent messages (for testing)
-func (m *MockMessageSender) GetSentMessages() []ports.SentMessage {
+func (m *MockMessageSender) GetSentMessages() []domain.SentMessage {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 
-	result := make([]ports.SentMessage, len(m.messages))
+	result := make([]domain.SentMessage, len(m.messages))
 	copy(result, m.messages)
 	return result
 }
@@ -56,4 +56,4 @@ func (m *MockMessageSender) ClearMessages() {
 }
 
 // Verify interface compliance
-var _ ports.MessageSender = (*MockMessageSender)(nil)
+var _ domain.MessageSender = (*MockMessageSender)(nil)

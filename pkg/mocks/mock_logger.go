@@ -4,19 +4,19 @@ import (
 	"sync"
 	"time"
 
-	"github.com/lonegunmanb/agentfarm/pkg/ports"
+	"github.com/lonegunmanb/agentfarm/pkg/domain"
 )
 
 // MockLogger implements Logger interface for testing
 type MockLogger struct {
 	mu   sync.RWMutex
-	logs []ports.LogEntry
+	logs []domain.LogEntry
 }
 
 // NewMockLogger creates a new mock logger
 func NewMockLogger() *MockLogger {
 	return &MockLogger{
-		logs: make([]ports.LogEntry, 0),
+		logs: make([]domain.LogEntry, 0),
 	}
 }
 
@@ -55,7 +55,7 @@ func (m *MockLogger) logEntry(level string, message string, fields ...map[string
 		}
 	}
 
-	entry := ports.LogEntry{
+	entry := domain.LogEntry{
 		Level:   level,
 		Message: message,
 		Fields:  mergedFields,
@@ -66,11 +66,11 @@ func (m *MockLogger) logEntry(level string, message string, fields ...map[string
 }
 
 // GetLogs returns all log entries (for testing)
-func (m *MockLogger) GetLogs() []ports.LogEntry {
+func (m *MockLogger) GetLogs() []domain.LogEntry {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 
-	result := make([]ports.LogEntry, len(m.logs))
+	result := make([]domain.LogEntry, len(m.logs))
 	copy(result, m.logs)
 	return result
 }
@@ -84,11 +84,11 @@ func (m *MockLogger) ClearLogs() {
 }
 
 // GetLogsByLevel returns log entries filtered by level (for testing)
-func (m *MockLogger) GetLogsByLevel(level string) []ports.LogEntry {
+func (m *MockLogger) GetLogsByLevel(level string) []domain.LogEntry {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 
-	var result []ports.LogEntry
+	var result []domain.LogEntry
 	for _, log := range m.logs {
 		if log.Level == level {
 			result = append(result, log)
@@ -98,4 +98,4 @@ func (m *MockLogger) GetLogsByLevel(level string) []ports.LogEntry {
 }
 
 // Verify interface compliance
-var _ ports.Logger = (*MockLogger)(nil)
+var _ domain.Logger = (*MockLogger)(nil)

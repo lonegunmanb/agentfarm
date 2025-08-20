@@ -1,19 +1,17 @@
-package services
+package domain
 
 import (
 	"fmt"
-
-	"github.com/lonegunmanb/agentfarm/pkg/core/domain"
 )
 
 // ProtocolValidator enforces revolutionary discipline and validation rules
 // It provides comprehensive validation for yield messages and agent states
 type ProtocolValidator struct {
-	soviet *domain.SovietState
+	soviet *SovietState
 }
 
 // NewProtocolValidator creates a new protocol validator with the given soviet state
-func NewProtocolValidator(soviet *domain.SovietState) *ProtocolValidator {
+func NewProtocolValidator(soviet *SovietState) *ProtocolValidator {
 	if soviet == nil {
 		panic("soviet state cannot be nil")
 	}
@@ -23,7 +21,7 @@ func NewProtocolValidator(soviet *domain.SovietState) *ProtocolValidator {
 }
 
 // ValidateYieldMessage validates the structure and content of a yield message
-func (v *ProtocolValidator) ValidateYieldMessage(message domain.YieldMessage) error {
+func (v *ProtocolValidator) ValidateYieldMessage(message YieldMessage) error {
 	fromRole := message.FromRole()
 	toRole := message.ToRole()
 
@@ -108,7 +106,7 @@ func (v *ProtocolValidator) ValidateAgentStateConsistency(agentRole string) erro
 
 	// Check consistency: if agent has barrel, they should be working
 	hasBarrel := barrel.IsHeldBy(agentRole)
-	isWorking := agent.State() == domain.AgentStateWorking
+	isWorking := agent.State() == AgentStateWorking
 
 	if hasBarrel && !isWorking {
 		return fmt.Errorf("agent state inconsistency: agent '%s' has barrel but is waiting", agentRole)
@@ -122,7 +120,7 @@ func (v *ProtocolValidator) ValidateAgentStateConsistency(agentRole string) erro
 }
 
 // ValidateYieldWorkflow performs comprehensive validation of the entire yield workflow
-func (v *ProtocolValidator) ValidateYieldWorkflow(message domain.YieldMessage) error {
+func (v *ProtocolValidator) ValidateYieldWorkflow(message YieldMessage) error {
 	// 1. Validate message structure
 	if err := v.ValidateYieldMessage(message); err != nil {
 		return err
@@ -149,7 +147,7 @@ func (v *ProtocolValidator) ValidateYieldWorkflow(message domain.YieldMessage) e
 }
 
 // GetValidationErrors collects all validation errors for a yield message
-func (v *ProtocolValidator) GetValidationErrors(message domain.YieldMessage) []error {
+func (v *ProtocolValidator) GetValidationErrors(message YieldMessage) []error {
 	var errors []error
 
 	// Collect all validation errors without short-circuiting

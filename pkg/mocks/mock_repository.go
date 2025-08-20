@@ -4,8 +4,7 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/lonegunmanb/agentfarm/pkg/core/domain"
-	"github.com/lonegunmanb/agentfarm/pkg/ports"
+	"github.com/lonegunmanb/agentfarm/pkg/domain"
 )
 
 // MockAgentRepository implements AgentRepository interface for testing
@@ -83,4 +82,4 @@ func (m *MockAgentRepository) Exists(role string) bool {
 }
 
 // Verify interface compliance
-var _ ports.AgentRepository = (*MockAgentRepository)(nil)
+var _ domain.AgentRepository = (*MockAgentRepository)(nil)
