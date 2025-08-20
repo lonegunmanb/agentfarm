@@ -82,12 +82,13 @@
   - [x] SovietState entity managing the collective state
   - [x] Unit tests for all domain models (pure Go testing with Testify)
 
-- [ ] **Task 1.2**: Core Business Logic - Soviet Coordinator Service
-  - SovietCoordinator struct implementing all barrel management logic
-  - Agent registration/deregistration logic (in-memory)
-  - Barrel yield validation and transfer logic
-  - Agent state transition logic (waiting -> working -> yielding)
-  - Unit tests for all business rules (mocked dependencies)
+- [x] **Task 1.2**: Core Business Logic - Soviet Coordinator Service ✅ **COMPLETED**
+  - [x] SovietCoordinator struct implementing all barrel management logic
+  - [x] Agent registration/deregistration logic with replacement protocol (in-memory)
+  - [x] Barrel yield validation and transfer logic
+  - [x] Agent state transition logic (waiting -> working -> yielding)
+  - [x] Reconnection recovery logic for disconnected barrel holders
+  - [x] Unit tests for all business rules (comprehensive test coverage with map-based test data)
 
 - [ ] **Task 1.3**: Core Business Logic - Protocol Validation
   - ProtocolValidator service for revolutionary discipline enforcement

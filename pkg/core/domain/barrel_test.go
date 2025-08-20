@@ -21,18 +21,18 @@ func TestBarrelOfGun_NewBarrelOfGun(t *testing.T) {
 
 func TestBarrelOfGun_TransferTo(t *testing.T) {
 	// RED: Test barrel transfer functionality
-	
+
 	// Mock time to control the progression
 	baseTime := time.Date(2025, 8, 20, 10, 0, 0, 0, time.UTC)
 	currentTime := baseTime
-	
+
 	stubs := gostub.Stub(&nowFunc, func() time.Time {
 		result := currentTime
 		currentTime = currentTime.Add(1 * time.Minute) // Advance by 1 minute each call
 		return result
 	})
 	defer stubs.Reset()
-	
+
 	barrel := NewBarrelOfGun()
 	initialTime := barrel.LastTransferTime()
 
