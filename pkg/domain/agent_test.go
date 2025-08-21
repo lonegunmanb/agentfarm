@@ -39,14 +39,12 @@ func TestAgentComrade_SetConnected(t *testing.T) {
 	assert.Zero(t, agent.LastConnectedAt())
 
 	// Connect
-	err := agent.SetConnected(true)
-	assert.NoError(t, err)
+	agent.SetConnected(true)
 	assert.True(t, agent.IsConnected())
 	assert.NotZero(t, agent.LastConnectedAt())
 
 	// Disconnect
-	err = agent.SetConnected(false)
-	assert.NoError(t, err)
+	agent.SetConnected(false)
 	assert.False(t, agent.IsConnected())
 }
 

@@ -33,7 +33,7 @@ func (s *TCPMessageSender) UnregisterConnection(role string) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if conn, exists := s.connections[role]; exists {
-		conn.Close()
+		_ = conn.Close()
 		delete(s.connections, role)
 	}
 }

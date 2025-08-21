@@ -92,7 +92,9 @@ func (s *TCPServer) acceptConnections(ctx context.Context) {
 
 // handleConnection handles a single TCP connection
 func (s *TCPServer) handleConnection(ctx context.Context, conn net.Conn) {
-	defer conn.Close()
+	defer func() {
+		_ = conn.Close()
+	}()
 
 	scanner := bufio.NewScanner(conn)
 	for scanner.Scan() {

@@ -95,12 +95,11 @@ func (a *AgentComrade) LastMessageTime() time.Time {
 }
 
 // SetConnected updates the connection state of the agent
-func (a *AgentComrade) SetConnected(connected bool) error {
+func (a *AgentComrade) SetConnected(connected bool) {
 	a.connected = connected
 	if connected {
 		a.lastConnectedAt = nowFunc()
 	}
-	return nil
 }
 
 // TransitionTo transitions the agent to a new state with validation

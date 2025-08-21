@@ -271,16 +271,25 @@ func (s *SovietState) RegisterAgent(agent *AgentComrade) (bool, string, error) {
 		})
 	}
 
-	// Set the agent as connected and in waiting state initially
+	// Set the agent as connected and ensure it's in waiting state initially
 	agent.SetConnected(true)
-	agent.TransitionTo(AgentStateWaiting)
+	// Only transition to waiting if not already waiting (new agents start in waiting state)
+	if agent.State() != AgentStateWaiting {
+		err = agent.TransitionTo(AgentStateWaiting)
+		if err != nil {
+			return false, "", fmt.Errorf("failed to transition agent to waiting state: %w", err)
+		}
+	}
 
 	// Check if this agent role should resume work (if they hold the barrel)
 	barrel := s.GetBarrel()
 	if barrel != nil && barrel.IsHeldBy(role) {
 		// Agent should resume work - activate them
 		lastMessage := barrel.LastMessage()
-		agent.TransitionTo(AgentStateWorking)
+		err = agent.TransitionTo(AgentStateWorking)
+		if err != nil {
+			return false, "", fmt.Errorf("failed to transition agent to working state: %w", err)
+		}
 		return true, lastMessage, nil
 	}
 
@@ -324,7 +333,10 @@ func (s *SovietState) DeregisterAgent(role string) error {
 		// Transfer barrel back to the people
 		barrel := s.GetBarrel()
 		if barrel != nil {
-			barrel.TransferTo("people", fmt.Sprintf("Agent '%s' deregistered, returning barrel to people", role))
+			err := barrel.TransferTo("people", fmt.Sprintf("Agent '%s' deregistered, returning barrel to people", role))
+			if err != nil {
+				return fmt.Errorf("failed to transfer barrel to people during deregistration: %w", err)
+			}
 		}
 	}
 
@@ -357,7 +369,10 @@ func (s *SovietState) ProcessYield(message YieldMessage) error {
 	// Get the source agent and transition it to waiting
 	sourceAgent := s.GetAgent(fromRole)
 	if sourceAgent != nil {
-		sourceAgent.Yield() // This transitions the agent to waiting state
+		err := sourceAgent.Yield() // This transitions the agent to waiting state
+		if err != nil {
+			return fmt.Errorf("failed to yield agent '%s': %w", fromRole, err)
+		}
 	}
 
 	// Use SovietState to handle barrel transfer
@@ -393,7 +408,10 @@ func (s *SovietState) ProcessYield(message YieldMessage) error {
 	if toRole != "people" {
 		targetAgent := s.GetAgent(toRole)
 		if targetAgent != nil {
-			targetAgent.Activate(payload) // This transitions the agent to working state
+			err := targetAgent.Activate(payload) // This transitions the agent to working state
+			if err != nil {
+				return fmt.Errorf("failed to activate target agent '%s': %w", toRole, err)
+			}
 		}
 	}
 
