@@ -1,5 +1,5 @@
 # Agent Farm - MCP (Multi-agent Control Protocol)
-Version: 4.0  
+
 Date: August 19, 2025
 
 ## 1. Project Overview
@@ -199,3 +199,386 @@ A critical scenario that must be handled to prevent system deadlock:
 - tester reconnects, sends: `{"type": "REGISTER", "role": "tester"}`
 - Central Committee detects currentBarrelHolder == "tester", immediately sends: `{"type": "ACTIVATE", "from_role": "developer", "payload": "Code ready for testing"}`
 - Revolutionary workflow resumes without People's intervention
+
+## 8. Sample Workflow Using CLI Binaries
+
+This section demonstrates how to coordinate agents using the command-line binaries in the `cmd/` package. Perfect for real-world automation and CI/CD pipelines!
+
+### 🚨 CRITICAL UNDERSTANDING: Blocking Behavior & Serial Coordination
+
+**THE KEY TO MULTI-AGENT COORDINATION:** When you run `go run cmd/agent/main.go --role=xxx`, the process will **BLOCK** until it receives the barrel of gun. This blocking behavior is not a bug—it's the revolutionary feature that enables deterministic serial coordination!
+
+**How Blocking Works:**
+```bash
+# This command BLOCKS until the agent receives the barrel
+go run cmd/agent/main.go --role=developer
+
+# Terminal will show:
+# Agent comrade developer connected to Central Committee at localhost:53646
+# Agent comrade developer registered successfully. Waiting for barrel assignment...
+# [BLOCKS HERE - waiting for People or another agent to yield barrel to developer]
+# 
+# When barrel is received:
+# 🔥 BARREL RECEIVED! Agent comrade developer is now active!
+# 📜 Message: [whatever message was sent with the yield]
+# ✅ Agent comrade developer task completed. Exiting...
+```
+
+**Blocking with Auto-Yield:**
+```bash
+# This command BLOCKS twice for complete coordination
+go run cmd/agent/main.go --role=developer --yield-to=qa --yield-msg="Code ready for testing"
+
+# Flow:
+# 1. BLOCKS waiting for barrel assignment
+# 2. Receives barrel and activates
+# 3. Auto-yields to qa with message
+# 4. BLOCKS again waiting for barrel to return (via people or qa yielding back)
+# 5. Exits only when barrel returns to developer
+```
+
+**Why This Blocking Behavior is Revolutionary:**
+- ✅ **Deterministic Execution**: Only one agent works at a time (serial execution)
+- ✅ **No Race Conditions**: Impossible for agents to conflict or work simultaneously
+- ✅ **Clear Handoffs**: Each agent explicitly passes work to the next agent
+- ✅ **Process Synchronization**: Agents coordinate through blocking, not polling
+- ✅ **People Control**: People can intervene at any blocking point
+
+**Integration Pattern for Automation:**
+```bash
+#!/bin/bash
+# automation_script.sh
+
+echo "Starting coordinated workflow..."
+
+# Start agent - this will block until workflow reaches this agent
+echo "Waiting for barrel assignment..."
+go run cmd/agent/main.go --role=ci-pipeline --yield-to=qa --yield-msg="Build completed: artifacts ready"
+
+echo "CI pipeline completed! Control passed to QA."
+# Script continues only after agent receives barrel, does work, yields to qa, and barrel returns
+```
+
+### 8.1 Basic Setup: Start the Revolutionary Infrastructure
+
+**Terminal 1: Start the Central Committee (Server)**
+```bash
+# Start the Soviet server on default port 53646
+go run cmd/server/main.go
+
+# Alternative: Use custom port and debug mode
+go run cmd/server/main.go --port=8080 --debug
+```
+
+**Terminal 2: Check Initial Status**
+```bash
+# Query the collective status as People's representatives
+go run cmd/people/main.go status
+
+# Expected output:
+# 🏛️  REVOLUTIONARY COLLECTIVE STATUS
+# ====================================
+# 🔫 Barrel Holder: people
+# 👥 Registered Agents: 0
+# 📋 No agents registered in the collective
+```
+
+### 8.2 Agent Registration and Discovery
+
+**Terminal 3: Register Developer Agent (FREEZES WAITING)**
+```bash
+# Register a developer with coding capabilities
+# CRITICAL: This command will FREEZE your terminal until barrel is assigned!
+go run cmd/agent/main.go --role=developer --capabilities="coding,git,debugging"
+
+# This agent will:
+# - Connect to Central Committee
+# - Register with specified capabilities
+# - FREEZE terminal waiting for barrel assignment
+# - Terminal remains FROZEN until someone yields barrel to "developer"
+# - Only then will this command complete and terminal become available
+```
+
+**Terminal 4: Register QA Agent (FREEZES WAITING)**
+```bash
+# Register a QA agent with testing capabilities
+# CRITICAL: This terminal will also FREEZE waiting for barrel assignment!
+go run cmd/agent/main.go --role=qa --capabilities="testing,automation,bug-reporting"
+
+# Terminal FREEZES until barrel is yielded to "qa"
+```
+
+**Terminal 5: Register DevOps Agent (FREEZES WAITING)**
+```bash
+# Register a DevOps agent with deployment capabilities
+# CRITICAL: This terminal will also FREEZE waiting for barrel assignment!
+go run cmd/agent/main.go --role=devops --capabilities="deployment,monitoring,infrastructure"
+
+# Terminal FREEZES until barrel is yielded to "devops"
+```
+
+**Why Agents FREEZE (Revolutionary Discipline):**
+Each agent terminal **MUST FREEZE** until the barrel is yielded to it - this is the fundamental principle of revolutionary coordination:
+
+```bash
+# CORRECT: Agent freezes terminal until barrel received
+go run cmd/agent/main.go --role=developer --capabilities="coding,git,debugging"
+# Terminal FREEZES here ⏸️ - waiting for People or another agent to yield barrel
+
+# WRONG: Using & defeats the purpose of serial coordination
+go run cmd/agent/main.go --role=developer &  # ❌ DON'T DO THIS!
+```
+
+**The Revolutionary Power of Freezing:**
+- 🔒 **Terminal becomes dedicated agent** - one frozen terminal per agent role
+- ⏸️ **Enforces serial execution** - no parallel chaos, only disciplined order  
+- 🎯 **Clear coordination points** - each frozen terminal waits for its turn
+- 🛡️ **Prevents race conditions** - impossible for agents to work simultaneously
+- 👥 **Visual workflow management** - see which agents are waiting vs working
+```bash
+# Register a DevOps agent with deployment capabilities
+go run cmd/agent/main.go --role=devops --capabilities="deployment,monitoring,infrastructure" &
+```
+
+**Query All Registered Agents (JSON format)**
+```bash
+# Get detailed agent information in JSON format
+go run cmd/agent/main.go --query-agents
+
+# Expected output:
+# [
+#   {
+#     "role": "developer",
+#     "capabilities": ["coding", "git", "debugging"],
+#     "state": "waiting",
+#     "connected": true
+#   },
+#   {
+#     "role": "qa",
+#     "capabilities": ["testing", "automation", "bug-reporting"],
+#     "state": "waiting", 
+#     "connected": true
+#   },
+#   {
+#     "role": "devops",
+#     "capabilities": ["deployment", "monitoring", "infrastructure"],
+#     "state": "waiting",
+#     "connected": true
+#   }
+# ]
+```
+
+**Query Agents (Human-readable format)**
+```bash
+# Get agent information in revolutionary human-readable format
+go run cmd/people/main.go query-agents
+
+# Expected output:
+# 👥 REGISTERED AGENT COMRADES
+# ============================
+# 1. ⏳ developer - waiting (✅ online)
+#    🛠️  Capabilities: coding, git, debugging
+#
+# 2. ⏳ qa - waiting (✅ online)
+#    🛠️  Capabilities: testing, automation, bug-reporting
+#
+# 3. ⏳ devops - waiting (✅ online)
+#    🛠️  Capabilities: deployment, monitoring, infrastructure
+#
+# Total: 3 comrades serving the People
+```
+
+### 8.3 Coordinated Development Workflow
+
+**Step 1: People Assign Initial Task**
+```bash
+# The People's representatives assign the first task
+go run cmd/people/main.go yield developer "Implement user authentication feature for Sprint 2024.8"
+
+# Output:
+# ✅ The People have yielded the barrel to comrade developer
+# 📜 Message: Implement user authentication feature for Sprint 2024.8
+
+# At this moment: developer agent (running in background) receives barrel and activates!
+```
+
+**Step 2: Developer Works and Yields to QA (BLOCKING COORDINATION)**
+```bash
+# IMPORTANT: This command will BLOCK until workflow completes!
+# Do NOT use & here - we want to block until the full cycle completes
+go run cmd/agent/main.go --role=developer --yield-to=qa --yield-msg="Authentication feature implemented. Ready for testing phase."
+
+# What happens during blocking:
+# 1. Command BLOCKS waiting for barrel assignment
+# 2. Receives barrel (immediately, since People just yielded to developer)
+# 3. Activates and shows: "🔥 BARREL RECEIVED! Agent comrade developer is now active!"
+# 4. Auto-yields to qa with message
+# 5. BLOCKS again waiting for barrel to return
+# 6. qa agent (in background) receives barrel and starts working
+# 7. Eventually qa or People must yield back to developer for command to complete
+# 8. Only then does this command exit and terminal becomes available again
+```
+
+**Alternative: One-Shot Agent (No Auto-Yield)**
+```bash
+# If you just want agent to do work and exit (no yield-to specified):
+go run cmd/agent/main.go --role=developer
+
+# This will:
+# 1. BLOCK waiting for barrel
+# 2. Receive barrel and activate
+# 3. Show activation message
+# 4. Exit immediately (developer stays in background, returns to waiting)
+```
+
+**Step 3: Check Status During QA Phase**
+```bash
+# Check current status while qa is working
+go run cmd/people/main.go status
+
+# Expected output:
+# 🏛️  REVOLUTIONARY COLLECTIVE STATUS
+# ====================================
+# 🔫 Barrel Holder: qa
+# 👥 Registered Agents: 3
+# 
+# 📋 AGENT COMRADES:
+#   ⏳ developer - waiting (✅ online)  [Background process still running, waiting]
+#   🔥 qa - working (✅ online)         [Has barrel, actively working]
+#   ⏳ devops - waiting (✅ online)     [Background process still running, waiting]
+```
+
+**Step 4: QA Completes Testing and Yields to DevOps (BLOCKING)**
+```bash
+# This BLOCKS until qa receives barrel, does work, yields to devops, and gets barrel back
+go run cmd/agent/main.go --role=qa --yield-to=devops --yield-msg="Testing completed. 12 test cases passed. Ready for production deployment."
+
+# Flow during blocking:
+# 1. Waits for qa background agent to yield barrel to this command's qa agent instance
+# 2. Activates qa work
+# 3. Yields to devops
+# 4. devops (background) receives barrel
+# 5. Eventually devops must yield back to qa for this command to complete
+```
+
+**Step 5: DevOps Completes and Returns to People (BLOCKING)**
+```bash
+# This BLOCKS until full devops cycle completes
+go run cmd/agent/main.go --role=devops --yield-to=people --yield-msg="Feature successfully deployed to production. Monitoring shows all systems green."
+
+# When this command completes, barrel is back with People
+# All agents return to waiting state
+# Workflow cycle is complete!
+```
+
+### 8.4 Advanced Workflow: Conditional Logic
+
+**Simulate Bug Discovery During Testing**
+```bash
+# QA discovers critical bugs and needs developer attention
+go run cmd/agent/main.go --role=qa --yield-to=developer --yield-msg="CRITICAL: Authentication bypass vulnerability discovered. Immediate developer attention required."
+
+# Developer fixes and re-yields to QA
+go run cmd/agent/main.go --role=developer --yield-to=qa --yield-msg="Vulnerability patched. Security tests added. Please re-verify."
+
+# QA approves and proceeds to deployment
+go run cmd/agent/main.go --role=qa --yield-to=devops --yield-msg="Security verified. All tests passing. Approved for production deployment."
+```
+
+### 8.5 Emergency People Intervention
+
+**People Take Control During Crisis**
+```bash
+# If manual intervention is needed at any point
+go run cmd/people/main.go yield people "Emergency detected. People taking direct control for investigation."
+
+# All agents will return to waiting state
+# People can assess situation and provide new guidance
+go run cmd/people/main.go status
+
+# After investigation, People can redirect workflow
+go run cmd/people/main.go yield developer "Emergency resolved. Resume authentication feature development with additional security requirements."
+```
+
+### 8.6 Automation Scripts
+
+**Example: Complete CI/CD Pipeline Script**
+```bash
+#!/bin/bash
+# automated_pipeline.sh
+
+echo "🚀 Starting Revolutionary CI/CD Pipeline"
+
+# IMPORTANT: This terminal will FREEZE until People assign barrel to ci-pipeline
+echo "⏳ Agent terminal will freeze waiting for People's directive..."
+go run cmd/agent/main.go --role=ci-pipeline --capabilities="building,testing,deploying"
+
+# Command above FREEZES until barrel received, then completes and exits
+echo "✅ Pipeline agent registered and waiting. Use another terminal to yield barrel to ci-pipeline."
+```
+
+**Example: Multi-Agent Coordination Script**
+```bash
+#!/bin/bash
+# coordinate_agents.sh
+
+echo "📋 This script will freeze waiting for barrel assignment..."
+echo "� Terminal will become dedicated agent worker"
+
+# This terminal becomes a dedicated frontend-dev agent worker
+go run cmd/agent/main.go --role=frontend-dev --capabilities="react,typescript,ui-ux"
+
+# Terminal FREEZES here until someone yields barrel to frontend-dev
+# When activated, agent does work and then this script completes
+echo "✅ Frontend development task completed!"
+```
+
+### 8.7 Integration with External Tools
+
+**Example: Git Hook Integration**
+```bash
+#!/bin/bash
+# .git/hooks/post-commit
+
+# Trigger agent workflow on commit
+COMMIT_MSG=$(git log -1 --pretty=format:"%s")
+go run cmd/people/main.go yield developer "New commit detected: ${COMMIT_MSG}. Begin automated testing workflow."
+```
+
+**Example: Docker Integration**
+```dockerfile
+# Dockerfile for Agent Farm deployment
+FROM golang:1.21-alpine
+
+WORKDIR /app
+COPY . .
+RUN go build -o server cmd/server/main.go
+RUN go build -o agent cmd/agent/main.go
+RUN go build -o people cmd/people/main.go
+
+# Start server - agents will freeze waiting for People's directives
+CMD ["sh", "-c", "./server"]
+```
+
+**Example: Dedicated Agent Container**
+```dockerfile
+# Agent containers freeze until barrel assigned
+FROM golang:1.21-alpine
+
+WORKDIR /app
+COPY . .
+RUN go build -o agent cmd/agent/main.go
+
+# This container will freeze waiting for barrel assignment
+CMD ["./agent", "--role=ci-agent", "--capabilities=docker,k8s,testing"]
+```
+
+This revolutionary workflow system enables:
+- **🔄 Serial Execution**: Eliminates race conditions through barrel-controlled workflow
+- **🛠️ Capability-Aware**: Agents can be queried for their skills before assignment
+- **👥 Human Oversight**: People can intervene at any point for manual control
+- **🔧 Automation-Friendly**: Perfect for CI/CD pipelines and automated workflows
+- **📊 Full Visibility**: Complete status monitoring and agent discovery
+- **🚀 Scalable**: Add new agent types with custom capabilities as needed
+
+The Agent Farm collective serves the revolutionary cause of coordinated automation! 🏛️
