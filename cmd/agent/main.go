@@ -185,15 +185,18 @@ func (ac *AgentClient) handleActivateMessage(line string) error {
 		fmt.Printf("📜 Message: %s\n", activateMsg.Payload)
 	}
 
-	// If yield-to is specified, yield the barrel before exiting
+	// If yield-to is specified, yield the barrel and continue waiting
 	if ac.yieldTo != "" {
 		fmt.Printf("⚡ Auto-yielding barrel to: %s\n", ac.yieldTo)
 		if err := ac.yieldBarrel(); err != nil {
 			fmt.Printf("❌ Failed to yield barrel: %v\n", err)
+			return err
 		}
+		fmt.Printf("⏳ Agent comrade %s returned to waiting state. Ready for next barrel assignment...\n", ac.role)
+		return nil // Continue message loop, stay alive for future activations
 	}
 
-	// Exit immediately after receiving activation
+	// Only exit if no yield-to specified (one-shot execution)
 	fmt.Printf("✅ Agent comrade %s task completed. Exiting...\n", ac.role)
 	os.Exit(0)
 	return nil // This line will never be reached, but satisfies the function signature
@@ -280,11 +283,11 @@ REVOLUTIONARY WORKFLOW:
     1. Agent comrade connects to Central Committee
     2. Registers with specified role
     3. Waits in disciplined formation for barrel assignment
-    4. When barrel is received, prints activation message and exits immediately
-    5. If --yield-to specified, yields barrel to target before exiting
-    6. Process completes its revolutionary duty and terminates
+    4. When barrel is received, prints activation message
+    5. If --yield-to specified, yields barrel to target and continues waiting for future assignments
+    6. Agent remains active indefinitely, ready to receive barrel whenever it's available
 
-The agent will automatically reconnect if connection is lost before activation.
+The agent will automatically reconnect if connection is lost.
 Use Ctrl+C to gracefully disconnect while waiting for barrel assignment.
 `, defaultServerAddr)
 }
