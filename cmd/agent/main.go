@@ -41,6 +41,7 @@ func main() {
 		serverAddr   = flag.String("server", defaultServerAddr, "Soviet server address")
 		yieldTo      = flag.String("yield-to", "", "Target role to yield barrel to after activation")
 		yieldMsg     = flag.String("yield-msg", "", "Message to send with yield")
+		queryAgents  = flag.Bool("query-agents", false, "Query registered agents and their capabilities (JSON format)")
 		help         = flag.Bool("help", false, "Show help")
 		version      = flag.Bool("version", false, "Show version")
 	)
@@ -53,6 +54,15 @@ func main() {
 
 	if *version {
 		showVersion()
+		return
+	}
+
+	// Handle query-agents operation
+	if *queryAgents {
+		if err := executeQueryAgents(*serverAddr); err != nil {
+			fmt.Fprintf(os.Stderr, "Error querying agents: %v\n", err)
+			os.Exit(1)
+		}
 		return
 	}
 
@@ -285,10 +295,14 @@ OPTIONS:
     --server <address>          Soviet server address (default: %s)
     --yield-to <role>           Target role to yield barrel to after activation
     --yield-msg <message>       Message to send with yield
+    --query-agents              Query registered agents and their capabilities (JSON format)
     --help                      Show this help
     --version                   Show version
 
 EXAMPLES:
+    # Query registered agents and their capabilities
+    agent --query-agents
+
     # Register as developer and wait for barrel
     agent --role=developer
 
@@ -330,4 +344,61 @@ func showVersion() {
 	fmt.Println("Agent Farm - Agent Comrade CLI v1.0")
 	fmt.Println("Revolutionary Multi-agent Control Protocol")
 	fmt.Println("Part of the Agent Farm collective")
+}
+
+// executeQueryAgents connects to the server and queries agent details
+func executeQueryAgents(serverAddr string) error {
+	// Connect to the server
+	conn, err := net.DialTimeout("tcp", serverAddr, connectionTimeout)
+	if err != nil {
+		return fmt.Errorf("failed to connect to Soviet server at %s: %w", serverAddr, err)
+	}
+	defer conn.Close()
+
+	// Send query message
+	queryMsg := tcp.QueryMessage{
+		Type: "QUERY_AGENTS",
+	}
+
+	data, err := json.Marshal(queryMsg)
+	if err != nil {
+		return fmt.Errorf("failed to marshal query message: %w", err)
+	}
+
+	data = append(data, '\n')
+	_, err = conn.Write(data)
+	if err != nil {
+		return fmt.Errorf("failed to send query message: %w", err)
+	}
+
+	// Read response
+	scanner := bufio.NewScanner(conn)
+	if !scanner.Scan() {
+		return fmt.Errorf("no response from server")
+	}
+
+	line := strings.TrimSpace(scanner.Text())
+	if line == "" {
+		return fmt.Errorf("empty response from server")
+	}
+
+	// Parse response
+	var response tcp.AgentDetailsMessage
+	if err := json.Unmarshal([]byte(line), &response); err != nil {
+		// Try error message format
+		var errorMsg tcp.ErrorMessage
+		if errParse := json.Unmarshal([]byte(line), &errorMsg); errParse == nil {
+			return fmt.Errorf("server error: %s", errorMsg.Message)
+		}
+		return fmt.Errorf("failed to parse response: %w", err)
+	}
+
+	// Output as JSON
+	output, err := json.MarshalIndent(response.AgentDetails, "", "  ")
+	if err != nil {
+		return fmt.Errorf("failed to format output: %w", err)
+	}
+
+	fmt.Println(string(output))
+	return nil
 }

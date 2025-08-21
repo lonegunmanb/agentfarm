@@ -38,6 +38,20 @@ type AgentListMessage struct {
 	Agents []string `json:"agents"`
 }
 
+// AgentDetailsMessage represents response to detailed agent queries
+type AgentDetailsMessage struct {
+	Type         string                   `json:"type"` // "AGENT_DETAILS"
+	AgentDetails []AgentDetailInfo        `json:"agent_details"`
+}
+
+// AgentDetailInfo represents detailed information about a single agent
+type AgentDetailInfo struct {
+	Role         string   `json:"role"`
+	Capabilities []string `json:"capabilities"`
+	State        string   `json:"state"`
+	Connected    bool     `json:"connected"`
+}
+
 // StatusMessage represents response to status queries
 type StatusMessage struct {
 	Type             string            `json:"type"` // "STATUS"

@@ -166,6 +166,27 @@ func (s *SovietState) GetRegisteredAgents() []string {
 	return s.GetAgentRoles()
 }
 
+// GetAgentDetails returns detailed information about all registered agents including capabilities
+// This implements the AgentService interface
+func (s *SovietState) GetAgentDetails() []AgentDetails {
+	agents, err := s.repo.GetAll()
+	if err != nil {
+		// Return empty slice if error - should not happen in normal operation
+		return []AgentDetails{}
+	}
+	
+	details := make([]AgentDetails, 0, len(agents))
+	for _, agent := range agents {
+		details = append(details, AgentDetails{
+			Role:         agent.Role(),
+			Capabilities: agent.Capabilities(),
+			State:        agent.State(),
+			Connected:    agent.IsConnected(),
+		})
+	}
+	return details
+}
+
 // CurrentBarrelHolder returns the role that currently holds the barrel
 func (s *SovietState) CurrentBarrelHolder() string {
 	if s.barrel == nil {

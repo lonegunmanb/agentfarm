@@ -1,5 +1,13 @@
 package domain
 
+// AgentDetails represents detailed information about an agent comrade
+type AgentDetails struct {
+	Role         string      `json:"role"`
+	Capabilities []string    `json:"capabilities"`
+	State        AgentState  `json:"state"`
+	Connected    bool        `json:"connected"`
+}
+
 // SovietService defines the primary port for commanding the Soviet coordinator
 // This interface represents the use cases that drive the Agent Farm application
 // External adapters (TCP, CLI, etc.) will call these methods to interact with the core domain
@@ -40,6 +48,10 @@ type AgentService interface {
 	// GetRegisteredAgents returns a list of all currently registered agent roles
 	// This provides an overview of all agents known to the collective
 	GetRegisteredAgents() []string
+
+	// GetAgentDetails returns detailed information about all registered agents including capabilities
+	// This provides a comprehensive view of all agents and their capabilities for the collective
+	GetAgentDetails() []AgentDetails
 }
 
 // StatusResponse represents the current status of the Agent Farm collective

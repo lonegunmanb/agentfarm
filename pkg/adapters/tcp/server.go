@@ -250,15 +250,22 @@ func (s *TCPServer) handleYieldMessage(ctx context.Context, conn net.Conn, messa
 }
 
 func (s *TCPServer) handleQueryAgentsMessage(ctx context.Context, conn net.Conn) {
-	agents, err := s.HandleQueryAgents(ctx)
-	if err != nil {
-		s.sendError(conn, err.Error())
-		return
+	details := s.agentService.GetAgentDetails()
+	
+	// Convert domain.AgentDetails to TCP protocol format
+	agentDetails := make([]AgentDetailInfo, len(details))
+	for i, detail := range details {
+		agentDetails[i] = AgentDetailInfo{
+			Role:         detail.Role,
+			Capabilities: detail.Capabilities,
+			State:        detail.State.String(),
+			Connected:    detail.Connected,
+		}
 	}
 
-	response := AgentListMessage{
-		Type:   "AGENT_LIST",
-		Agents: agents,
+	response := AgentDetailsMessage{
+		Type:         "AGENT_DETAILS",
+		AgentDetails: agentDetails,
 	}
 	s.sendMessage(conn, response)
 }

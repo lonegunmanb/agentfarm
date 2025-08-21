@@ -58,6 +58,11 @@ func (m *MockAgentService) GetRegisteredAgents() []string {
 	return args.Get(0).([]string)
 }
 
+func (m *MockAgentService) GetAgentDetails() []domain.AgentDetails {
+	args := m.Called()
+	return args.Get(0).([]domain.AgentDetails)
+}
+
 // MockMessageSender for testing
 type MockMessageSender struct {
 	mock.Mock

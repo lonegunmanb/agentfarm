@@ -230,28 +230,73 @@ func (pc *PeopleClient) handleStatusResponse(line string) error {
 }
 
 func (pc *PeopleClient) handleAgentListResponse(line string) error {
-	var agentListMsg tcp.AgentListMessage
-	if err := json.Unmarshal([]byte(line), &agentListMsg); err != nil {
-		// Try error message format
-		var errorMsg tcp.ErrorMessage
-		if errParse := json.Unmarshal([]byte(line), &errorMsg); errParse == nil {
-			return fmt.Errorf("server error: %s", errorMsg.Message)
-		}
-		return fmt.Errorf("failed to parse agent list response: %w", err)
+	// Try to parse as detailed agent response first
+	var agentDetailsMsg tcp.AgentDetailsMessage
+	if err := json.Unmarshal([]byte(line), &agentDetailsMsg); err == nil {
+		return pc.displayAgentDetails(agentDetailsMsg)
 	}
 
+	// Fallback to simple agent list (for backward compatibility)
+	var agentListMsg tcp.AgentListMessage
+	if err := json.Unmarshal([]byte(line), &agentListMsg); err == nil {
+		return pc.displaySimpleAgentList(agentListMsg)
+	}
+
+	// Try error message format
+	var errorMsg tcp.ErrorMessage
+	if err := json.Unmarshal([]byte(line), &errorMsg); err == nil {
+		return fmt.Errorf("server error: %s", errorMsg.Message)
+	}
+
+	return fmt.Errorf("failed to parse agent list response")
+}
+
+func (pc *PeopleClient) displayAgentDetails(msg tcp.AgentDetailsMessage) error {
 	fmt.Println("👥 REGISTERED AGENT COMRADES")
 	fmt.Println("============================")
 	
-	if len(agentListMsg.Agents) > 0 {
-		for i, agent := range agentListMsg.Agents {
+	if len(msg.AgentDetails) > 0 {
+		for i, agent := range msg.AgentDetails {
+			icon := "⏳"
+			if agent.State == "working" {
+				icon = "🔥"
+			}
+			
+			connected := "❌ offline"
+			if agent.Connected {
+				connected = "✅ online"
+			}
+			
+			fmt.Printf("%d. %s %s - %s (%s)\n", i+1, icon, agent.Role, agent.State, connected)
+			
+			if len(agent.Capabilities) > 0 {
+				fmt.Printf("   🛠️  Capabilities: %s\n", strings.Join(agent.Capabilities, ", "))
+			} else {
+				fmt.Printf("   🛠️  Capabilities: none specified\n")
+			}
+			fmt.Println()
+		}
+	} else {
+		fmt.Println("No agents registered in the collective")
+	}
+
+	fmt.Printf("Total: %d comrades serving the People\n", len(msg.AgentDetails))
+	return nil
+}
+
+func (pc *PeopleClient) displaySimpleAgentList(msg tcp.AgentListMessage) error {
+	fmt.Println("👥 REGISTERED AGENT COMRADES")
+	fmt.Println("============================")
+	
+	if len(msg.Agents) > 0 {
+		for i, agent := range msg.Agents {
 			fmt.Printf("%d. %s\n", i+1, agent)
 		}
 	} else {
 		fmt.Println("No agents registered in the collective")
 	}
 
-	fmt.Printf("\nTotal: %d comrades serving the People\n", len(agentListMsg.Agents))
+	fmt.Printf("\nTotal: %d comrades serving the People\n", len(msg.Agents))
 	return nil
 }
 
