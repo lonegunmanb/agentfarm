@@ -267,8 +267,7 @@ func (s *SovietState) RegisterAgent(agent *AgentComrade) (bool, string, error) {
 
 	if s.logger != nil {
 		s.logger.Info("Agent registered successfully", map[string]interface{}{
-			"role":       role,
-			"agent_type": agent.Type(),
+			"role": role,
 		})
 	}
 

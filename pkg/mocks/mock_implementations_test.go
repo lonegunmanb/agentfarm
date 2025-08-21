@@ -24,7 +24,7 @@ func (suite *MockImplementationsTestSuite) TestMockAgentRepository_StoreAndRetri
 	repo := NewMockAgentRepository()
 
 	// Create test agent
-	agent := domain.NewAgentComrade("developer", "code-agent", []string{"coding", "testing"})
+	agent := domain.NewAgentComrade("developer", []string{"coding", "testing"})
 
 	// Store agent
 	err := repo.Store(agent)
@@ -34,7 +34,6 @@ func (suite *MockImplementationsTestSuite) TestMockAgentRepository_StoreAndRetri
 	retrieved, err := repo.GetByRole("developer")
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), "developer", retrieved.Role())
-	assert.Equal(suite.T(), "code-agent", retrieved.Type())
 }
 
 // TestMockAgentRepository_GetNonExistentAgent tests error handling

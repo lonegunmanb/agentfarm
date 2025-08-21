@@ -51,7 +51,8 @@ func TestWorkflowIntegrationTests(t *testing.T) {
 // TestCompleteRevolutionaryWorkflow tests the complete agent registration -> yield -> transfer cycle
 func (suite *WorkflowIntegrationTestSuite) TestCompleteRevolutionaryWorkflow() {
 	// Phase 1: Register developer agent (SovietState now handles all external operations)
-	developerAgent := domain.NewAgentComrade("developer", "code-agent", []string{"coding", "testing"})
+		// Test agent registration workflow
+	developerAgent := domain.NewAgentComrade("developer", []string{"coding", "testing"})
 
 	shouldResume, lastMessage, err := suite.sovietService.RegisterAgent(developerAgent)
 	assert.NoError(suite.T(), err)
@@ -69,7 +70,7 @@ func (suite *WorkflowIntegrationTestSuite) TestCompleteRevolutionaryWorkflow() {
 	assert.Equal(suite.T(), domain.AgentStateWorking, developerState)
 
 	// Phase 3: Register tester agent while developer is working
-	testerAgent := domain.NewAgentComrade("tester", "test-agent", []string{"testing", "validation"})
+	testerAgent := domain.NewAgentComrade("tester", []string{"testing", "validation"})
 
 	shouldResume, lastMessage, err = suite.sovietService.RegisterAgent(testerAgent)
 	assert.NoError(suite.T(), err)
@@ -107,8 +108,8 @@ func (suite *WorkflowIntegrationTestSuite) TestCompleteRevolutionaryWorkflow() {
 // TestPeoplesInterventionAndStatusQuery tests People's intervention and status querying
 func (suite *WorkflowIntegrationTestSuite) TestPeoplesInterventionAndStatusQuery() {
 	// Register multiple agents
-	developerAgent := domain.NewAgentComrade("developer", "code-agent", []string{"coding"})
-	testerAgent := domain.NewAgentComrade("tester", "test-agent", []string{"testing"})
+	developerAgent := domain.NewAgentComrade("developer", []string{"coding"})
+	testerAgent := domain.NewAgentComrade("tester", []string{"testing"})
 
 	_, _, err := suite.sovietService.RegisterAgent(developerAgent)
 	assert.NoError(suite.T(), err)
@@ -148,7 +149,7 @@ func (suite *WorkflowIntegrationTestSuite) TestPeoplesInterventionAndStatusQuery
 // TestDisconnectionRecoveryWithMocks tests disconnection/reconnection recovery with mock failure simulation
 func (suite *WorkflowIntegrationTestSuite) TestDisconnectionRecoveryWithMocks() {
 	// Phase 1: Register developer and give them the barrel
-	developerAgent := domain.NewAgentComrade("developer", "code-agent", []string{"coding"})
+	developerAgent := domain.NewAgentComrade("developer", []string{"coding"})
 
 	_, _, err := suite.sovietService.RegisterAgent(developerAgent)
 	assert.NoError(suite.T(), err)
@@ -164,7 +165,7 @@ func (suite *WorkflowIntegrationTestSuite) TestDisconnectionRecoveryWithMocks() 
 	assert.Equal(suite.T(), domain.AgentStateWorking, developerState)
 
 	// Phase 2: Simulate reconnection - developer reconnects
-	newDeveloperAgent := domain.NewAgentComrade("developer", "code-agent", []string{"coding"})
+	newDeveloperAgent := domain.NewAgentComrade("developer", []string{"coding"})
 
 	shouldResume, lastMessage, err := suite.sovietService.RegisterAgent(newDeveloperAgent)
 	assert.NoError(suite.T(), err)
@@ -184,7 +185,7 @@ func (suite *WorkflowIntegrationTestSuite) TestDisconnectionRecoveryWithMocks() 
 // TestMockVerificationAndAssertion tests that all mocks captured expected interactions
 func (suite *WorkflowIntegrationTestSuite) TestMockVerificationAndAssertion() {
 	// Register an agent and perform a complete workflow (SovietState handles all external operations)
-	developerAgent := domain.NewAgentComrade("developer", "code-agent", []string{"coding"})
+	developerAgent := domain.NewAgentComrade("developer", []string{"coding"})
 
 	_, _, err := suite.sovietService.RegisterAgent(developerAgent)
 	assert.NoError(suite.T(), err)

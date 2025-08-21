@@ -101,10 +101,10 @@ func TestTCPServer_HandleRegister(t *testing.T) {
 	// Test successful registration
 	t.Run("successful registration", func(t *testing.T) {
 		mockSoviet.On("RegisterAgent", mock.MatchedBy(func(agent *domain.AgentComrade) bool {
-			return agent.Role() == "developer"
+			return agent.Role() == "developer" && len(agent.Capabilities()) == 2
 		})).Return(false, "", nil).Once()
 
-		shouldActivate, payload, err := server.HandleRegister(context.Background(), "developer")
+		shouldActivate, payload, err := server.HandleRegister(context.Background(), "developer", []string{"coding", "testing"})
 
 		assert.NoError(t, err)
 		assert.False(t, shouldActivate)
@@ -118,7 +118,7 @@ func TestTCPServer_HandleRegister(t *testing.T) {
 			return agent.Role() == "tester"
 		})).Return(true, "Start testing", nil).Once()
 
-		shouldActivate, payload, err := server.HandleRegister(context.Background(), "tester")
+		shouldActivate, payload, err := server.HandleRegister(context.Background(), "tester", []string{"testing", "automation"})
 
 		assert.NoError(t, err)
 		assert.True(t, shouldActivate)

@@ -6,13 +6,24 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestAgentComrade_NewAgentComrade(t *testing.T) {
+func TestNewAgentComrade(t *testing.T) {
 	// RED: Test creation of new agent comrade
-	agent := NewAgentComrade("developer", "primary", []string{"code", "debug", "review"})
+	agent := NewAgentComrade("developer", []string{"code", "debug", "review"})
 
 	assert.NotNil(t, agent)
 	assert.Equal(t, "developer", agent.Role())
-	assert.Equal(t, "primary", agent.Type())
+	assert.Equal(t, []string{"code", "debug", "review"}, agent.Capabilities())
+	assert.Equal(t, AgentStateWaiting, agent.State())
+	assert.False(t, agent.IsConnected())
+	assert.NotZero(t, agent.CreatedAt())
+}
+
+func TestAgentComrade_NewAgentComrade(t *testing.T) {
+	// RED: Test creation of new agent comrade
+	agent := NewAgentComrade("developer", []string{"code", "debug", "review"})
+
+	assert.NotNil(t, agent)
+	assert.Equal(t, "developer", agent.Role())
 	assert.Equal(t, []string{"code", "debug", "review"}, agent.Capabilities())
 	assert.Equal(t, AgentStateWaiting, agent.State())
 	assert.False(t, agent.IsConnected())
@@ -21,7 +32,7 @@ func TestAgentComrade_NewAgentComrade(t *testing.T) {
 
 func TestAgentComrade_SetConnected(t *testing.T) {
 	// RED: Test connection state management
-	agent := NewAgentComrade("tester", "secondary", []string{"test", "validate"})
+	agent := NewAgentComrade("tester", []string{"test", "validate"})
 
 	// Initially disconnected
 	assert.False(t, agent.IsConnected())
@@ -41,7 +52,7 @@ func TestAgentComrade_SetConnected(t *testing.T) {
 
 func TestAgentComrade_TransitionState(t *testing.T) {
 	// RED: Test state transitions
-	agent := NewAgentComrade("developer", "primary", []string{"code"})
+	agent := NewAgentComrade("developer", []string{"code"})
 
 	// Initial state is Waiting
 	assert.Equal(t, AgentStateWaiting, agent.State())
@@ -59,7 +70,7 @@ func TestAgentComrade_TransitionState(t *testing.T) {
 
 func TestAgentComrade_TransitionState_InvalidTransition(t *testing.T) {
 	// RED: Test invalid state transitions
-	agent := NewAgentComrade("developer", "primary", []string{"code"})
+	agent := NewAgentComrade("developer", []string{"code"})
 
 	// Cannot transition from Working to Working
 	agent.TransitionTo(AgentStateWorking)
@@ -71,7 +82,7 @@ func TestAgentComrade_TransitionState_InvalidTransition(t *testing.T) {
 
 func TestAgentComrade_HasCapability(t *testing.T) {
 	// RED: Test capability checking
-	agent := NewAgentComrade("developer", "primary", []string{"code", "debug", "review"})
+	agent := NewAgentComrade("developer", []string{"code", "debug", "review"})
 
 	assert.True(t, agent.HasCapability("code"))
 	assert.True(t, agent.HasCapability("debug"))
@@ -82,7 +93,7 @@ func TestAgentComrade_HasCapability(t *testing.T) {
 
 func TestAgentComrade_SetLastMessage(t *testing.T) {
 	// RED: Test message tracking
-	agent := NewAgentComrade("tester", "secondary", []string{"test"})
+	agent := NewAgentComrade("tester", []string{"test"})
 
 	// Initially no message
 	assert.Empty(t, agent.LastMessage())
@@ -104,7 +115,7 @@ func TestAgentState_String(t *testing.T) {
 
 func TestAgentComrade_Activate(t *testing.T) {
 	// RED: Test agent activation
-	agent := NewAgentComrade("developer", "primary", []string{"code"})
+	agent := NewAgentComrade("developer", []string{"code"})
 
 	// Initially waiting
 	assert.True(t, agent.IsWaiting())
@@ -121,7 +132,7 @@ func TestAgentComrade_Activate(t *testing.T) {
 
 func TestAgentComrade_Activate_InvalidState(t *testing.T) {
 	// RED: Test activation from invalid state
-	agent := NewAgentComrade("developer", "primary", []string{"code"})
+	agent := NewAgentComrade("developer", []string{"code"})
 	agent.TransitionTo(AgentStateWorking)
 
 	// Cannot activate when already working
@@ -132,7 +143,7 @@ func TestAgentComrade_Activate_InvalidState(t *testing.T) {
 
 func TestAgentComrade_Yield(t *testing.T) {
 	// RED: Test agent yielding
-	agent := NewAgentComrade("developer", "primary", []string{"code"})
+	agent := NewAgentComrade("developer", []string{"code"})
 	agent.Activate("Work on task")
 
 	// Yield back to waiting
@@ -145,7 +156,7 @@ func TestAgentComrade_Yield(t *testing.T) {
 
 func TestAgentComrade_Yield_InvalidState(t *testing.T) {
 	// RED: Test yield from invalid state
-	agent := NewAgentComrade("developer", "primary", []string{"code"})
+	agent := NewAgentComrade("developer", []string{"code"})
 
 	// Cannot yield when not working
 	err := agent.Yield()

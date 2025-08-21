@@ -141,8 +141,8 @@ func (s *TCPServer) processMessage(ctx context.Context, conn net.Conn, messageDa
 // Implementation of CommandHandler interface methods
 
 // HandleRegister processes agent registration requests
-func (s *TCPServer) HandleRegister(ctx context.Context, role string) (bool, string, error) {
-	agent := domain.NewAgentComrade(role, "tcp-agent", []string{})
+func (s *TCPServer) HandleRegister(ctx context.Context, role string, capabilities []string) (bool, string, error) {
+	agent := domain.NewAgentComrade(role, capabilities)
 	return s.sovietService.RegisterAgent(agent)
 }
 
@@ -177,12 +177,17 @@ func (s *TCPServer) handleRegisterMessage(ctx context.Context, conn net.Conn, me
 		return
 	}
 
+	capabilities := msg.Capabilities
+	if capabilities == nil {
+		capabilities = []string{}
+	}
+
 	// Store connection for this role
 	s.mu.Lock()
 	s.connections[msg.Role] = conn
 	s.mu.Unlock()
 
-	shouldActivate, payload, err := s.HandleRegister(ctx, msg.Role)
+	shouldActivate, payload, err := s.HandleRegister(ctx, msg.Role, capabilities)
 	if err != nil {
 		s.sendError(conn, err.Error())
 		return

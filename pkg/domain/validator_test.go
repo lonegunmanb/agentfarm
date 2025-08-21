@@ -30,9 +30,9 @@ func (suite *ProtocolValidatorTestSuite) SetupTest() {
 
 	// Create test agents
 	suite.testAgents = map[string]*AgentComrade{
-		"developer": NewAgentComrade("developer", "developer", []string{"code", "test"}),
-		"tester":    NewAgentComrade("tester", "tester", []string{"test", "validate"}),
-		"reviewer":  NewAgentComrade("reviewer", "reviewer", []string{"review", "approve"}),
+		"developer": NewAgentComrade("developer", []string{"code", "test"}),
+		"tester":    NewAgentComrade("tester", []string{"test", "validate"}),
+		"reviewer":  NewAgentComrade("reviewer", []string{"review", "approve"}),
 	}
 
 	// Set agents as connected (they start as disconnected by default)

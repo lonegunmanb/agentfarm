@@ -36,7 +36,7 @@ var testAgents = map[string]TestAgentData{
 // createTestAgent creates an agent from test data
 func createTestAgent(agentKey string) *AgentComrade {
 	data := testAgents[agentKey]
-	return NewAgentComrade(data.Role, data.Type, data.Capabilities)
+	return NewAgentComrade(data.Role, data.Capabilities)
 }
 
 // CoordinatorTestSuite tests the coordinator functionality in SovietState

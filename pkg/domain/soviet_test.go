@@ -45,7 +45,7 @@ func TestSovietState_SetBarrel(t *testing.T) {
 func TestSovietState_RegisterAgent(t *testing.T) {
 	// RED: Test agent registration
 	soviet := newTestSoviet()
-	agent := NewAgentComrade("developer", "primary", []string{"code"})
+	agent := NewAgentComrade("developer", []string{"code"})
 
 	// Initially no agents
 	assert.Equal(t, 0, len(soviet.RegisteredAgents()))
@@ -68,7 +68,7 @@ func TestSovietState_RegisterAgent(t *testing.T) {
 	assert.Contains(t, err.Error(), "agent cannot be nil")
 
 	// Cannot register agent with duplicate role
-	duplicateAgent := NewAgentComrade("developer", "secondary", []string{"test"})
+	duplicateAgent := NewAgentComrade("developer", []string{"test"})
 	err = soviet.SimpleRegisterAgent(duplicateAgent)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "agent with role 'developer' is already registered")
@@ -77,7 +77,7 @@ func TestSovietState_RegisterAgent(t *testing.T) {
 func TestSovietState_UnregisterAgent(t *testing.T) {
 	// RED: Test agent unregistration
 	soviet := newTestSoviet()
-	agent := NewAgentComrade("developer", "primary", []string{"code"})
+	agent := NewAgentComrade("developer", []string{"code"})
 
 	// Register first
 	err := soviet.SimpleRegisterAgent(agent)
@@ -110,8 +110,8 @@ func TestSovietState_GetAgentRoles(t *testing.T) {
 	assert.Equal(t, 0, len(roles))
 
 	// Add agents
-	agent1 := NewAgentComrade("developer", "primary", []string{"code"})
-	agent2 := NewAgentComrade("tester", "secondary", []string{"test"})
+	agent1 := NewAgentComrade("developer", []string{"code"})
+	agent2 := NewAgentComrade("tester", []string{"test"})
 
 	soviet.SimpleRegisterAgent(agent1)
 	soviet.SimpleRegisterAgent(agent2)
@@ -135,7 +135,7 @@ func TestSovietState_CurrentBarrelHolder(t *testing.T) {
 	assert.Equal(t, "people", holder)
 
 	// Transfer barrel to agent
-	agent := NewAgentComrade("developer", "primary", []string{"code"})
+	agent := NewAgentComrade("developer", []string{"code"})
 	soviet.SimpleRegisterAgent(agent)
 
 	err := barrel.TransferTo("developer", "Start working")
@@ -156,7 +156,7 @@ func TestSovietState_IsBarrelHeldBy(t *testing.T) {
 	assert.False(t, soviet.IsBarrelHeldBy("developer"))
 
 	// Transfer to agent
-	agent := NewAgentComrade("developer", "primary", []string{"code"})
+	agent := NewAgentComrade("developer", []string{"code"})
 	soviet.SimpleRegisterAgent(agent)
 
 	barrel.TransferTo("developer", "Start working")
@@ -196,8 +196,8 @@ func TestSovietState_GetStats(t *testing.T) {
 	assert.True(t, stats.IsActive)
 
 	// Add agents
-	agent1 := NewAgentComrade("developer", "primary", []string{"code"})
-	agent2 := NewAgentComrade("tester", "secondary", []string{"test"})
+	agent1 := NewAgentComrade("developer", []string{"code"})
+	agent2 := NewAgentComrade("tester", []string{"test"})
 
 	agent1.SetConnected(true)
 	soviet.SimpleRegisterAgent(agent1)

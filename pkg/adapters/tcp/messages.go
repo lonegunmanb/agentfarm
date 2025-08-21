@@ -7,8 +7,9 @@ type TCPMessage struct {
 
 // RegisterMessage represents agent registration requests
 type RegisterMessage struct {
-	Type string `json:"type"` // "REGISTER"
-	Role string `json:"role"`
+	Type         string   `json:"type"`         // "REGISTER"
+	Role         string   `json:"role"`
+	Capabilities []string `json:"capabilities"`
 }
 
 // YieldMessage represents yield requests from agents or people

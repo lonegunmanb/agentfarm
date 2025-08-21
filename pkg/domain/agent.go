@@ -29,7 +29,6 @@ func (s AgentState) String() string {
 // Each agent has a role, capabilities, and follows the disciplined lifecycle.
 type AgentComrade struct {
 	role            string
-	agentType       string
 	capabilities    []string
 	state           AgentState
 	connected       bool
@@ -39,14 +38,13 @@ type AgentComrade struct {
 	lastMessageTime time.Time
 }
 
-// NewAgentComrade creates a new agent comrade with the specified role, type, and capabilities
-func NewAgentComrade(role, agentType string, capabilities []string) *AgentComrade {
+// NewAgentComrade creates a new agent comrade with the specified role and capabilities
+func NewAgentComrade(role string, capabilities []string) *AgentComrade {
 	caps := make([]string, len(capabilities))
 	copy(caps, capabilities)
 
 	return &AgentComrade{
 		role:         role,
-		agentType:    agentType,
 		capabilities: caps,
 		state:        AgentStateWaiting,
 		connected:    false,
@@ -57,11 +55,6 @@ func NewAgentComrade(role, agentType string, capabilities []string) *AgentComrad
 // Role returns the agent's role
 func (a *AgentComrade) Role() string {
 	return a.role
-}
-
-// Type returns the agent's type
-func (a *AgentComrade) Type() string {
-	return a.agentType
 }
 
 // Capabilities returns a copy of the agent's capabilities

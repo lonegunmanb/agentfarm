@@ -24,23 +24,25 @@ const (
 
 // AgentClient represents an Agent Comrade connection to the Central Committee
 type AgentClient struct {
-	role       string
-	serverAddr string
-	yieldTo    string
-	yieldMsg   string
-	conn       net.Conn
-	done       chan bool
-	hasYielded bool // Track if we have already yielded
+	role         string
+	capabilities []string
+	serverAddr   string
+	yieldTo      string
+	yieldMsg     string
+	conn         net.Conn
+	done         chan bool
+	hasYielded   bool // Track if we have already yielded
 }
 
 func main() {
 	var (
-		role       = flag.String("role", "", "Agent comrade role (required)")
-		serverAddr = flag.String("server", defaultServerAddr, "Soviet server address")
-		yieldTo    = flag.String("yield-to", "", "Target role to yield barrel to after activation")
-		yieldMsg   = flag.String("yield-msg", "", "Message to send with yield")
-		help       = flag.Bool("help", false, "Show help")
-		version    = flag.Bool("version", false, "Show version")
+		role         = flag.String("role", "", "Agent comrade role (required)")
+		capabilities = flag.String("capabilities", "", "Agent comrade capabilities (comma-separated)")
+		serverAddr   = flag.String("server", defaultServerAddr, "Soviet server address")
+		yieldTo      = flag.String("yield-to", "", "Target role to yield barrel to after activation")
+		yieldMsg     = flag.String("yield-msg", "", "Message to send with yield")
+		help         = flag.Bool("help", false, "Show help")
+		version      = flag.Bool("version", false, "Show version")
 	)
 	flag.Parse()
 
@@ -60,12 +62,23 @@ func main() {
 		os.Exit(1)
 	}
 
+	// Parse capabilities
+	var capsList []string
+	if *capabilities != "" {
+		capsList = strings.Split(*capabilities, ",")
+		// Trim whitespace from each capability
+		for i, cap := range capsList {
+			capsList[i] = strings.TrimSpace(cap)
+		}
+	}
+
 	client := &AgentClient{
-		role:       *role,
-		serverAddr: *serverAddr,
-		yieldTo:    *yieldTo,
-		yieldMsg:   *yieldMsg,
-		done:       make(chan bool),
+		role:         *role,
+		capabilities: capsList,
+		serverAddr:   *serverAddr,
+		yieldTo:      *yieldTo,
+		yieldMsg:     *yieldMsg,
+		done:         make(chan bool),
 	}
 
 	if err := client.Run(); err != nil {
@@ -88,7 +101,7 @@ func (ac *AgentClient) Run() error {
 		select {
 		case <-ac.done:
 			if ac.conn != nil {
-				ac.conn.Close()
+				_ = ac.conn.Close()
 			}
 			return nil
 		default:
@@ -108,14 +121,17 @@ func (ac *AgentClient) connectAndServe() error {
 	if err != nil {
 		return fmt.Errorf("failed to connect to Soviet server at %s: %w", ac.serverAddr, err)
 	}
-	defer ac.conn.Close()
+	defer func() {
+		_ = ac.conn.Close()
+	}()
 
 	fmt.Printf("Agent comrade %s connected to Central Committee at %s\n", ac.role, ac.serverAddr)
 
 	// Send registration message
 	registerMsg := tcp.RegisterMessage{
-		Type: "REGISTER",
-		Role: ac.role,
+		Type:         "REGISTER",
+		Role:         ac.role,
+		Capabilities: ac.capabilities,
 	}
 
 	if err := ac.sendMessage(registerMsg); err != nil {
@@ -264,26 +280,33 @@ USAGE:
     agent [OPTIONS]
 
 OPTIONS:
-    --role <role>           Agent comrade role (required)
-    --server <address>      Soviet server address (default: %s)
-    --yield-to <role>       Target role to yield barrel to after activation
-    --yield-msg <message>   Message to send with yield
-    --help                  Show this help
-    --version               Show version
+    --role <role>               Agent comrade role (required)
+    --capabilities <caps>       Agent comrade capabilities (comma-separated, e.g., "coding,testing,debugging")
+    --server <address>          Soviet server address (default: %s)
+    --yield-to <role>           Target role to yield barrel to after activation
+    --yield-msg <message>       Message to send with yield
+    --help                      Show this help
+    --version                   Show version
 
 EXAMPLES:
     # Register as developer and wait for barrel
     agent --role=developer
 
+    # Register as developer with capabilities
+    agent --role=developer --capabilities="coding,code-review,mentoring"
+
+    # Register as tester with capabilities
+    agent --role=qa --capabilities="testing,automation,ui-testing"
+
     # Register as developer and auto-yield to tester with message
     agent --role=developer --yield-to=tester --yield-msg="Code ready for testing"
 
-    # Connect to custom server
-    agent --role=developer --server=localhost:8080
+    # Connect to custom server with capabilities
+    agent --role=developer --server=localhost:8080 --capabilities="coding,debugging"
 
 REVOLUTIONARY WORKFLOW:
     1. Agent comrade connects to Central Committee
-    2. Registers with specified role
+    2. Registers with specified role and capabilities
     3. Waits in disciplined formation for barrel assignment
     4. When barrel is received, prints activation message
     5. If --yield-to specified, yields barrel to target and waits for barrel to return
@@ -292,6 +315,11 @@ REVOLUTIONARY WORKFLOW:
 BLOCKING BEHAVIOR:
     - Without --yield-to: Agent blocks until barrel received, then exits
     - With --yield-to: Agent blocks until barrel received, yields it, then blocks again until barrel returns, then exits
+
+CAPABILITIES:
+    Capabilities define what skills the agent comrade possesses. These are critical for
+    the collective to understand each agent's revolutionary potential and assign
+    appropriate tasks based on their expertise.
 
 The agent will automatically reconnect if connection is lost.
 Use Ctrl+C to gracefully disconnect while waiting for barrel assignment.
