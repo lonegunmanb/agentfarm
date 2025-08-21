@@ -30,6 +30,7 @@ type AgentClient struct {
 	yieldMsg   string
 	conn       net.Conn
 	done       chan bool
+	hasYielded bool // Track if we have already yielded
 }
 
 func main() {
@@ -185,18 +186,19 @@ func (ac *AgentClient) handleActivateMessage(line string) error {
 		fmt.Printf("📜 Message: %s\n", activateMsg.Payload)
 	}
 
-	// If yield-to is specified, yield the barrel and continue waiting
-	if ac.yieldTo != "" {
+	// If yield-to is specified and we haven't yielded yet, yield the barrel and wait for it to come back
+	if ac.yieldTo != "" && !ac.hasYielded {
 		fmt.Printf("⚡ Auto-yielding barrel to: %s\n", ac.yieldTo)
 		if err := ac.yieldBarrel(); err != nil {
 			fmt.Printf("❌ Failed to yield barrel: %v\n", err)
 			return err
 		}
-		fmt.Printf("⏳ Agent comrade %s returned to waiting state. Ready for next barrel assignment...\n", ac.role)
-		return nil // Continue message loop, stay alive for future activations
+		ac.hasYielded = true
+		fmt.Printf("⏳ Agent comrade %s waiting for barrel to return...\n", ac.role)
+		return nil // Continue message loop, wait for barrel to come back
 	}
 
-	// Only exit if no yield-to specified (one-shot execution)
+	// Exit when barrel is received (either first time with no yield-to, or after barrel comes back)
 	fmt.Printf("✅ Agent comrade %s task completed. Exiting...\n", ac.role)
 	os.Exit(0)
 	return nil // This line will never be reached, but satisfies the function signature
@@ -284,8 +286,12 @@ REVOLUTIONARY WORKFLOW:
     2. Registers with specified role
     3. Waits in disciplined formation for barrel assignment
     4. When barrel is received, prints activation message
-    5. If --yield-to specified, yields barrel to target and continues waiting for future assignments
-    6. Agent remains active indefinitely, ready to receive barrel whenever it's available
+    5. If --yield-to specified, yields barrel to target and waits for barrel to return
+    6. When barrel is received again (or first time if no yield-to), agent exits
+
+BLOCKING BEHAVIOR:
+    - Without --yield-to: Agent blocks until barrel received, then exits
+    - With --yield-to: Agent blocks until barrel received, yields it, then blocks again until barrel returns, then exits
 
 The agent will automatically reconnect if connection is lost.
 Use Ctrl+C to gracefully disconnect while waiting for barrel assignment.
