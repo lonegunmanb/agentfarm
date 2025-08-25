@@ -24,26 +24,28 @@ const (
 
 // AgentClient represents an Agent Comrade connection to the Central Committee
 type AgentClient struct {
-	role         string
-	capabilities []string
-	serverAddr   string
-	yieldTo      string
-	yieldMsg     string
-	conn         net.Conn
-	done         chan bool
-	hasYielded   bool // Track if we have already yielded
+	role            string
+	capabilities    []string
+	serverAddr      string
+	yieldTo         string
+	yieldMsg        string
+	morningCallFile string
+	conn            net.Conn
+	done            chan bool
+	hasYielded      bool // Track if we have already yielded
 }
 
 func main() {
 	var (
-		role         = flag.String("role", "", "Agent comrade role (required)")
-		capabilities = flag.String("capabilities", "", "Agent comrade capabilities (comma-separated)")
-		serverAddr   = flag.String("server", defaultServerAddr, "Soviet server address")
-		yieldTo      = flag.String("yield-to", "", "Target role to yield barrel to after activation")
-		yieldMsg     = flag.String("yield-msg", "", "Message to send with yield")
-		queryAgents  = flag.Bool("query-agents", false, "Query registered agents and their capabilities (JSON format)")
-		help         = flag.Bool("help", false, "Show help")
-		version      = flag.Bool("version", false, "Show version")
+		role            = flag.String("role", "", "Agent comrade role (required)")
+		capabilities    = flag.String("capabilities", "", "Agent comrade capabilities (comma-separated)")
+		serverAddr      = flag.String("server", defaultServerAddr, "Soviet server address")
+		yieldTo         = flag.String("yield-to", "", "Target role to yield barrel to after activation")
+		yieldMsg        = flag.String("yield-msg", "", "Message to send with yield")
+		morningCallFile = flag.String("morning-call-file", "", "Optional file to read and print when activated")
+		queryAgents     = flag.Bool("query-agents", false, "Query registered agents and their capabilities (JSON format)")
+		help            = flag.Bool("help", false, "Show help")
+		version         = flag.Bool("version", false, "Show version")
 	)
 	flag.Parse()
 
@@ -83,12 +85,13 @@ func main() {
 	}
 
 	client := &AgentClient{
-		role:         *role,
-		capabilities: capsList,
-		serverAddr:   *serverAddr,
-		yieldTo:      *yieldTo,
-		yieldMsg:     *yieldMsg,
-		done:         make(chan bool),
+		role:            *role,
+		capabilities:    capsList,
+		serverAddr:      *serverAddr,
+		yieldTo:         *yieldTo,
+		yieldMsg:        *yieldMsg,
+		morningCallFile: *morningCallFile,
+		done:            make(chan bool),
 	}
 
 	if err := client.Run(); err != nil {
@@ -207,6 +210,13 @@ func (ac *AgentClient) handleActivateMessage(line string) error {
 		return fmt.Errorf("failed to parse ACTIVATE message: %w", err)
 	}
 
+	// Print morning call file content if specified
+	if ac.morningCallFile != "" {
+		if err := ac.printMorningCallFile(); err != nil {
+			fmt.Printf("⚠️  Warning: Failed to read morning call file '%s': %v\n", ac.morningCallFile, err)
+		}
+	}
+
 	fmt.Printf("\n🔥 BARREL RECEIVED! Agent comrade %s is now active!\n", ac.role)
 	if activateMsg.Payload != "" {
 		fmt.Printf("📜 Message: %s\n", activateMsg.Payload)
@@ -255,6 +265,22 @@ func (ac *AgentClient) handleAckRegisterMessage(line string) error {
 	return nil
 }
 
+func (ac *AgentClient) printMorningCallFile() error {
+	content, err := os.ReadFile(ac.morningCallFile)
+	if err != nil {
+		return fmt.Errorf("failed to read file: %w", err)
+	}
+
+	fmt.Printf("🌅 MORNING CALL FILE CONTENT:\n")
+	fmt.Printf("═══════════════════════════════\n")
+	fmt.Printf("%s", string(content))
+	if !strings.HasSuffix(string(content), "\n") {
+		fmt.Printf("\n")
+	}
+	fmt.Printf("═══════════════════════════════\n")
+	return nil
+}
+
 func (ac *AgentClient) yieldBarrel() error {
 	yieldMsg := tcp.YieldMessage{
 		Type:     "YIELD",
@@ -295,6 +321,7 @@ OPTIONS:
     --server <address>          Soviet server address (default: %s)
     --yield-to <role>           Target role to yield barrel to after activation
     --yield-msg <message>       Message to send with yield
+    --morning-call-file <path>  Optional file to read and print when activated
     --query-agents              Query registered agents and their capabilities (JSON format)
     --help                      Show this help
     --version                   Show version
@@ -315,6 +342,9 @@ EXAMPLES:
     # Register as developer and auto-yield to tester with message
     agent --role=developer --yield-to=tester --yield-msg="Code ready for testing"
 
+    # Register with morning call file that prints when activated
+    agent --role=developer --morning-call-file="/path/to/tasks.txt"
+
     # Connect to custom server with capabilities
     agent --role=developer --server=localhost:8080 --capabilities="coding,debugging"
 
@@ -322,13 +352,19 @@ REVOLUTIONARY WORKFLOW:
     1. Agent comrade connects to Central Committee
     2. Registers with specified role and capabilities
     3. Waits in disciplined formation for barrel assignment
-    4. When barrel is received, prints activation message
-    5. If --yield-to specified, yields barrel to target and waits for barrel to return
-    6. When barrel is received again (or first time if no yield-to), agent exits
+    4. When barrel is received, prints morning call file content (if specified)
+    5. Prints activation message
+    6. If --yield-to specified, yields barrel to target and waits for barrel to return
+    7. When barrel is received again (or first time if no yield-to), agent exits
 
 BLOCKING BEHAVIOR:
     - Without --yield-to: Agent blocks until barrel received, then exits
     - With --yield-to: Agent blocks until barrel received, yields it, then blocks again until barrel returns, then exits
+
+MORNING CALL FILE:
+    If --morning-call-file is specified, the agent will read and print the file content
+    when activated. This is useful for displaying task lists, instructions, or
+    daily reminders when the agent receives the barrel.
 
 CAPABILITIES:
     Capabilities define what skills the agent comrade possesses. These are critical for
